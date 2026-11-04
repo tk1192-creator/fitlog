@@ -2,6 +2,7 @@
 import { ACTIVITY_LEVELS, daysBetween, todayStr } from '../calc.js';
 import { defaultData, exportCSV, exportJSON, normalize } from '../storage.js';
 import { generateSample } from '../sample.js';
+import { clearAllTasks, loadTasks } from './home-tasks.js';
 import { confirmDialog, field, fmtDateLong, h, toast } from '../ui.js';
 
 const BACKUP_REMIND_DAYS = 14;
@@ -169,7 +170,7 @@ function dataCard(app) {
 
 function dangerCard(app) {
   return h('details', { class: 'card danger-zone' },
-    h('summary', { text: '危険な操作（サンプルデータ・全削除）' }),
+    h('summary', { text: '危険な操作（サンプルデータ・削除）' }),
     h('p', { class: 'card-note', text: 'ここでの操作は元に戻せません。必要に応じて先にエクスポートしてください。' }),
     h('div', { class: 'btn-grid' },
       h('button', {
@@ -187,12 +188,28 @@ function dangerCard(app) {
         },
       }),
       h('button', {
-        type: 'button', class: 'btn btn-danger', text: 'すべてのデータを削除',
+        type: 'button', class: 'btn btn-danger', text: 'タスクをすべて削除',
         onclick: async () => {
-          const ok = await confirmDialog('すべての記録と設定を削除し、初期状態に戻します。\nこの操作は元に戻せません。', { title: '全データの削除', okText: 'すべて削除する', danger: true });
+          const tasks = loadTasks();
+          if (tasks === null) return toast('タスクのデータを読み取れませんでした。タスク画面で確認してください');
+          if (!tasks.length) return toast('削除するタスクはありません');
+          const ok = await confirmDialog(
+            `タスク ${tasks.length} 件をすべて削除します（完了したタスクも含みます）。\nタスク画面の設定・テンプレートと、運動・体重・食事の記録は残ります。\nこの操作は元に戻せません。必要ならタスク画面で先に「JSONをエクスポート」してください。`,
+            { title: 'タスクの削除', okText: `${tasks.length} 件を削除する`, danger: true },
+          );
+          if (!ok) return;
+          if (!clearAllTasks()) return toast('削除できませんでした。タスク画面で確認してください');
+          app.render();
+          toast(`タスク ${tasks.length} 件を削除しました`);
+        },
+      }),
+      h('button', {
+        type: 'button', class: 'btn btn-danger', text: '運動・体重・食事の記録をすべて削除',
+        onclick: async () => {
+          const ok = await confirmDialog('運動・体重・食事の記録と設定をすべて削除し、初期状態に戻します（タスクは残ります）。\nこの操作は元に戻せません。', { title: '記録の削除', okText: 'すべて削除する', danger: true });
           if (!ok) return;
           app.replaceData(defaultData());
-          toast('すべてのデータを削除しました');
+          toast('運動・体重・食事の記録をすべて削除しました');
         },
       }),
     ),

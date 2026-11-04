@@ -112,7 +112,113 @@
     document.body.append(fab);
   }
 
-  // 4) 保存場所の表示は一覧の下に置く
+  // 4) 「完了したタスクを削除」ボタン（バックアップ・補助操作の欄）
+  //    Task Board 本体はタスクをメモリ上に持っているため、保存データを書き換えてから画面を読み込み直す。
+  const TASK_KEY = 'taskBoard.data';
+  const DONE_MSG_KEY = 's-done-cleared';
+  const backupActions = document.querySelector('.backup-actions');
+  if (backupActions) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-danger s-clear-done';
+    btn.innerHTML = '<svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/><path d="m9.5 13 2 2 3.5-4"/></svg>';
+    btn.append('完了したタスクを削除');
+    btn.addEventListener('click', clearDoneTasks);
+    backupActions.append(btn);
+  }
+
+  function readTaskData() {
+    try {
+      const data = JSON.parse(localStorage.getItem(TASK_KEY) || 'null');
+      return data && Array.isArray(data.tasks) ? data : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function clearDoneTasks() {
+    const data = readTaskData();
+    if (!data) return notify('タスクのデータを読み取れませんでした');
+    const done = data.tasks.filter((t) => t && t.status === 'done');
+    if (!done.length) return notify('完了したタスクはありません');
+    const ok = await confirmBox(
+      '完了したタスクの削除',
+      `完了したタスク ${done.length} 件を削除します（未完了の ${data.tasks.length - done.length} 件は残ります）。\nこの操作は元に戻せません。必要なら先に「JSONをエクスポート」してください。`,
+      `${done.length} 件を削除する`,
+    );
+    if (!ok) return;
+    const doneIds = new Set(done.map((t) => t.id));
+    data.tasks = data.tasks
+      .filter((t) => !doneIds.has(t.id))
+      // 削除したタスクを「先行タスク」にしていた参照は外す
+      .map((t) => (t.dependsOn && doneIds.has(t.dependsOn) ? { ...t, dependsOn: '' } : t));
+    try {
+      localStorage.setItem(TASK_KEY, JSON.stringify(data));
+    } catch (_) {
+      return notify('保存できませんでした。削除は行っていません');
+    }
+    try { sessionStorage.setItem(DONE_MSG_KEY, String(done.length)); } catch (_) { /* 表示だけなので無視 */ }
+    location.reload();
+  }
+
+  // 読み込み直した後に結果を知らせる
+  try {
+    const n = sessionStorage.getItem(DONE_MSG_KEY);
+    if (n) {
+      sessionStorage.removeItem(DONE_MSG_KEY);
+      setTimeout(() => notify(`完了したタスク ${n} 件を削除しました`), 300);
+    }
+  } catch (_) { /* 何もしない */ }
+
+  /** 画面下に短いメッセージを出す */
+  function notify(message) {
+    const el = document.createElement('div');
+    el.className = 's-notice';
+    el.setAttribute('role', 'status');
+    el.textContent = message;
+    document.body.append(el);
+    setTimeout(() => el.remove(), 3000);
+  }
+
+  /** 確認ダイアログ（ブラウザ標準の confirm は使わない） */
+  function confirmBox(title, message, okText) {
+    return new Promise((resolve) => {
+      const dlg = document.createElement('dialog');
+      dlg.className = 's-confirm';
+      const form = document.createElement('form');
+      form.method = 'dialog';
+      const h = document.createElement('h2');
+      h.textContent = title;
+      form.append(h);
+      for (const line of message.split('\n')) {
+        const p = document.createElement('p');
+        p.textContent = line;
+        form.append(p);
+      }
+      const actions = document.createElement('div');
+      actions.className = 's-confirm-actions';
+      const cancel = document.createElement('button');
+      cancel.value = 'cancel';
+      cancel.className = 'btn';
+      cancel.textContent = 'キャンセル';
+      const ok = document.createElement('button');
+      ok.value = 'ok';
+      ok.className = 'btn btn-danger';
+      ok.textContent = okText;
+      actions.append(cancel, ok);
+      form.append(actions);
+      dlg.append(form);
+      document.body.append(dlg);
+      dlg.addEventListener('close', () => {
+        resolve(dlg.returnValue === 'ok');
+        dlg.remove();
+      });
+      dlg.showModal();
+      cancel.focus();
+    });
+  }
+
+  // 5) 保存場所の表示は一覧の下に置く
   if (listSection) {
     const note = document.createElement('p');
     note.className = 'stride-local-note';

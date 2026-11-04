@@ -347,3 +347,24 @@ html.in-stride .stride-local-note { margin: 0; padding: 0 var(--space-1); }
 @media print {
   .s-fab, .s-searchbar .s-filter-toggle { display: none; }
 }
+
+/* ---------- 完了したタスクの削除（確認ダイアログ・通知） ---------- */
+.s-confirm {
+  width: min(440px, calc(100% - 32px)); padding: 0;
+  border: 1px solid var(--color-border); border-radius: 20px;
+  background: var(--color-surface); color: var(--color-text);
+  box-shadow: var(--shadow-lg);
+}
+.s-confirm::backdrop { background: rgba(5, 10, 20, 0.5); }
+.s-confirm form { padding: 20px; }
+.s-confirm h2 { margin: 0 0 8px; font-size: 18px; font-weight: 800; }
+.s-confirm p { margin: 4px 0; font-size: 14px; line-height: 1.6; }
+.s-confirm-actions { display: flex; gap: 8px; margin-top: 16px; }
+.s-confirm-actions .btn { flex: 1; justify-content: center; }
+.s-notice {
+  position: fixed; left: 50%; z-index: 120; transform: translateX(-50%);
+  bottom: calc(var(--stride-tab-h) + env(safe-area-inset-bottom, 0px) + 84px);
+  max-width: calc(100% - 32px); padding: 12px 18px; border-radius: 14px;
+  background: var(--color-text); color: var(--color-bg); font-size: 14px; font-weight: 700;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}

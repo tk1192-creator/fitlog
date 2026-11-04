@@ -69,3 +69,21 @@ export function tasksCard() {
   card.append(h('button', { type: 'button', class: 'btn btn-block', text: 'タスク画面を開く', onclick: openTasks }));
   return card;
 }
+
+/**
+ * タスクをすべて削除する（Task Board の設定・テンプレートは残す）。
+ * @returns {boolean} 削除できたら true。データを読み取れない・保存できないときは false
+ */
+export function clearAllTasks() {
+  try {
+    const raw = localStorage.getItem(TASK_KEY);
+    if (!raw) return true;
+    const data = JSON.parse(raw);
+    if (!data || !Array.isArray(data.tasks)) return false;
+    data.tasks = [];
+    localStorage.setItem(TASK_KEY, JSON.stringify(data));
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
