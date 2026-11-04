@@ -206,7 +206,7 @@ html.in-stride .panel { border-radius: 18px; }
 .stride-local-note { margin: 8px auto 0; font-size: 12px; color: var(--color-text-muted); }
 
 /* ---------- 下部タブ（STRIDE と共通） ---------- */
-html.in-stride body { padding-bottom: calc(var(--stride-tab-h) + env(safe-area-inset-bottom, 0px) + 16px); }
+html.in-stride body { padding-bottom: calc(var(--stride-tab-h) + env(safe-area-inset-bottom, 0px) + 84px); }
 .stride-tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
   display: grid; grid-template-columns: repeat(6, 1fr);
@@ -231,9 +231,119 @@ html.in-stride body { padding-bottom: calc(var(--stride-tab-h) + env(safe-area-i
   content: ""; position: absolute; top: 0; left: 50%; width: 28px; height: 3px;
   transform: translateX(-50%); border-radius: 0 0 3px 3px; background: var(--color-primary);
 }
-/* 通知（トースト）が下部タブに隠れないようにする */
-html.in-stride .toast-region { bottom: calc(var(--stride-tab-h) + env(safe-area-inset-bottom, 0px) + 12px); }
+/* 通知（トースト）が下部タブと「＋」ボタンに隠れないようにする */
+html.in-stride .toast-region { bottom: calc(var(--stride-tab-h) + env(safe-area-inset-bottom, 0px) + 84px); }
 
 @media print {
   .stride-tabbar, .stride-local-note { display: none; }
+}
+
+/* ==========================================================
+   タスク一覧を見やすくする作り込み（stride-bridge.js の並べ替えと対応）
+   ========================================================== */
+
+/* ---------- ヘッダーのボタン列：「タスクを追加」は右下の丸ボタンに移したので隠す ---------- */
+html.in-stride #add-task-btn { display: none; }
+html.in-stride .header-actions { gap: 8px; }
+html.in-stride #report-btn { min-height: 40px; padding: 0 14px; font-size: 14px; }
+
+/* ---------- 集計：1 行の小さなチップ（押すとその条件で絞り込み。動きは元のまま） ---------- */
+html.in-stride .summary { margin-top: 8px; }
+html.in-stride .summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-radius: 14px;
+  box-shadow: var(--shadow-md);
+}
+html.in-stride .summary-card {
+  grid-template-columns: auto 1fr;
+  gap: 0 6px;
+  padding: 8px 10px 6px;
+}
+html.in-stride .summary-icon { width: 14px; height: 14px; }
+html.in-stride .summary-icon .icon { width: 14px; height: 14px; }
+html.in-stride .summary-label { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.in-stride .summary-value { font-size: 24px; line-height: 1.15; }
+html.in-stride .summary-value small { font-size: 11px; }
+
+/* ---------- 検索欄（1 行）と「絞り込み」ボタン ---------- */
+.s-searchbar {
+  display: flex; align-items: stretch; gap: 8px;
+  padding: 0 var(--space-6) var(--space-3);
+}
+.s-search-field { flex: 1; min-width: 0; margin: 0; }
+.s-search-field .field-label {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+.s-search-field .input { min-height: 44px; border-radius: 12px; }
+.s-filter-toggle {
+  flex: none; display: inline-flex; align-items: center; gap: 6px;
+  min-height: 44px; padding: 0 14px;
+  border: 1px solid var(--color-border); border-radius: 12px;
+  background: var(--color-surface); color: var(--color-text);
+  font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.s-filter-toggle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.s-filter-toggle[aria-expanded="true"] { border-color: var(--color-primary); color: var(--color-primary); }
+.s-filter-toggle.is-active { background: var(--color-primary-soft); border-color: var(--color-primary); color: var(--color-primary); }
+.s-filter-badge {
+  display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px;
+  border-radius: 999px; background: var(--color-primary); color: #fff; font-size: 12px; font-weight: 800;
+}
+.s-filter-toggle:focus-visible { outline: 3px solid var(--color-primary-ring); outline-offset: 2px; }
+
+/* 折りたたみの中の絞り込み欄（入れ子のカードに見えないよう、枠を軽くする） */
+.s-filters-wrap { padding: 0 var(--space-6) var(--space-3); }
+.s-filters-wrap .panel.filters {
+  margin: 0; border-radius: 14px; box-shadow: none;
+  background: var(--color-surface-muted);
+}
+.s-filters-wrap .filters .panel-head { padding: 10px 14px; }
+.s-filters-wrap .filters .panel-title { font-size: 14px; }
+
+/* ---------- 「＋タスクを追加」の丸いボタン（右下に常に表示） ---------- */
+.s-fab {
+  position: fixed; z-index: 95;
+  right: max(16px, calc((100vw - 1200px) / 2 + 16px));
+  bottom: calc(var(--stride-tab-h) + env(safe-area-inset-bottom, 0px) + 16px);
+  display: grid; place-items: center;
+  width: 58px; height: 58px; border: 0; border-radius: 50%;
+  background: var(--stride-btn); color: #fff; cursor: pointer;
+  box-shadow: 0 8px 24px rgba(42, 120, 214, 0.45), 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: transform 0.1s;
+}
+.s-fab svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; }
+.s-fab:active { transform: scale(0.94); }
+.s-fab:focus-visible { outline: 3px solid var(--color-primary-ring); outline-offset: 3px; }
+
+/* ---------- 保存場所の表示（一覧の下） ---------- */
+html.in-stride .stride-local-note { margin: 0; padding: 0 var(--space-1); }
+
+/* ---------- スマホ ---------- */
+@media (max-width: 720px) {
+  .s-searchbar, .s-filters-wrap { padding-left: 0; padding-right: 0; }
+  html.in-stride .summary-card { padding: 7px 8px 5px; }
+  html.in-stride .summary-icon { display: none; }
+  html.in-stride .summary-card { grid-template-columns: 1fr; grid-template-areas: "label" "value"; }
+  html.in-stride .summary-value { font-size: 22px; }
+  /* ヘッダーのボタン（？・設定・報告文）は右寄せの 1 行・小さめ */
+  html.in-stride .header-inner { flex-direction: row; justify-content: flex-end; gap: 8px; padding-top: 6px; padding-bottom: 0; }
+  html.in-stride .header-actions { flex-wrap: nowrap; justify-content: flex-end; gap: 6px; }
+  html.in-stride .header-actions .btn { flex: none; }
+  html.in-stride #report-btn { min-height: 36px; padding: 0 12px; font-size: 13px; }
+
+  /* 一覧の見出し：1 行目「タスク一覧」と件数、2 行目「今日やる・マイタスク」と表示切替（アイコンのみ） */
+  html.in-stride .list-panel > .panel-head { flex-wrap: wrap; align-items: baseline; gap: 6px 8px; padding-bottom: 10px; }
+  html.in-stride .list-panel > .panel-head .panel-title { font-size: 17px; }
+  html.in-stride .list-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; flex: 1 1 100%; }
+  html.in-stride .result-count { flex: 1 1 100%; margin: -26px 0 0; text-align: right; font-size: 12px; }
+  html.in-stride .quick-filters { flex-wrap: nowrap; gap: 6px; }
+  html.in-stride .quick-btn { min-height: 34px; padding: 0 9px; font-size: 13px; gap: 4px; }
+  html.in-stride .quick-btn .icon { display: none; }
+  html.in-stride .view-toggle { flex-wrap: nowrap; padding: 2px; }
+  html.in-stride .view-btn { min-height: 32px; min-width: 32px; padding: 0 7px; font-size: 0; gap: 0; }
+  html.in-stride .view-btn .icon { width: 17px; height: 17px; }
+}
+
+@media print {
+  .s-fab, .s-searchbar .s-filter-toggle { display: none; }
 }

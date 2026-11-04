@@ -46,14 +46,78 @@
   tick();
   setInterval(tick, 1000);
 
-  // 保存場所の表示はサマリー（未完了・作業中…）のすぐ下に置く
-  // （ヘッダーの下端はサマリーが重なるため、そこに置くと隠れてしまう）
-  const summary = document.querySelector('.summary');
-  if (summary) {
+  // ---- タスク一覧を見やすくする並べ替え（要素は移動するだけで、Task Board 本体の機能はそのまま） ----
+  const listSection = document.getElementById('task-list-section');
+  const listHead = listSection && listSection.querySelector('.panel-head');
+  const filtersPanel = document.querySelector('.panel.filters');
+  const keywordField = document.querySelector('.field.filter-keyword');
+
+  if (listSection && listHead && filtersPanel && keywordField) {
+    // 1) 一覧のすぐ上に検索欄（1 行）と「絞り込み」ボタン
+    const searchbar = document.createElement('div');
+    searchbar.className = 's-searchbar';
+    keywordField.classList.add('s-search-field');
+    searchbar.append(keywordField);
+
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 's-filter-toggle';
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-controls', 's-filters-wrap');
+    toggle.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>';
+    const toggleLabel = document.createElement('span');
+    toggleLabel.textContent = '絞り込み';
+    const badge = document.createElement('span');
+    badge.className = 's-filter-badge';
+    badge.hidden = true;
+    toggle.append(toggleLabel, badge);
+    searchbar.append(toggle);
+    listHead.after(searchbar);
+
+    // 2) 状態・優先度などの絞り込みは折りたたみ（初期は閉じる）
+    const wrap = document.createElement('div');
+    wrap.id = 's-filters-wrap';
+    wrap.className = 's-filters-wrap';
+    wrap.hidden = true;
+    wrap.append(filtersPanel);
+    searchbar.after(wrap);
+    toggle.addEventListener('click', () => {
+      wrap.hidden = !wrap.hidden;
+      toggle.setAttribute('aria-expanded', String(!wrap.hidden));
+    });
+
+    // 絞り込み中は件数の印を出す（「条件をクリア」横の件数を読み取る）
+    const countLabel = document.getElementById('clear-filters-label');
+    const syncBadge = () => {
+      const n = countLabel ? countLabel.querySelector('.filter-count') : null;
+      const count = n ? n.textContent : '';
+      badge.textContent = count;
+      badge.hidden = !count;
+      toggle.classList.toggle('is-active', Boolean(count));
+    };
+    if (countLabel) new MutationObserver(syncBadge).observe(countLabel, { childList: true, subtree: true, characterData: true });
+    syncBadge();
+  }
+
+  // 3) 「＋タスクを追加」は右下の丸いボタン（常に表示）。元のボタンを押したのと同じ動きにする
+  const addBtn = document.getElementById('add-task-btn');
+  if (addBtn) {
+    const fab = document.createElement('button');
+    fab.type = 'button';
+    fab.className = 's-fab';
+    fab.setAttribute('aria-label', 'タスクを追加');
+    fab.title = 'タスクを追加（ショートカット：N）';
+    fab.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+    fab.addEventListener('click', () => addBtn.click());
+    document.body.append(fab);
+  }
+
+  // 4) 保存場所の表示は一覧の下に置く
+  if (listSection) {
     const note = document.createElement('p');
-    note.className = 'stride-local-note container';
+    note.className = 'stride-local-note';
     note.textContent = '🔒 データはこの端末の中だけに保存されます（同期なし・サーバーには送信しません）';
-    summary.after(note);
+    listSection.after(note);
   }
 
   // 下部タブ（STRIDE の index.html と同じ並び・アイコン）。STRIDE 側の画面は ../#<画面名> で開く
