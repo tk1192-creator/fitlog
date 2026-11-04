@@ -1,7 +1,7 @@
 /* ==========================================================
    STRIDE との連携（html に .in-stride が付いているときだけ効く）
    - Task Board の CSS 変数を STRIDE の配色・角丸・影に差し替える（ライト / ダーク）
-   - ヘッダー・ボタンの見た目、下部タブ、保存場所の表示
+   - 上部バー（STRIDE と同じ）・ボタンの見た目・下部タブ・保存場所の表示
    Task Board 本体の style.css は変更しない。claude.ai 版では読み込まない。
    ========================================================== */
 
@@ -39,7 +39,6 @@ html.in-stride {
   --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.3);
 
   /* このファイル内だけで使う値（STRIDE の css/style.css と同じ値） */
-  --stride-hero: linear-gradient(135deg, #0c2040 0%, #164a8c 55%, #2a78d6 100%);
   --stride-btn: linear-gradient(135deg, #2a78d6 0%, #1c5cab 100%);
   --stride-row-hover: #f2f4f8;
   --stride-row-overdue-hover: #fbe9e9;
@@ -99,7 +98,6 @@ html.in-stride {
     --shadow-sm: 0 0 0 1px rgba(255, 255, 255, 0.02);
     --shadow-md: 0 0 0 1px rgba(255, 255, 255, 0.02);
 
-    --stride-hero: linear-gradient(135deg, #0b1830 0%, #133d75 55%, #2a6fc4 100%);
     --stride-btn: linear-gradient(135deg, #3987e5 0%, #256abf 100%);
     --stride-row-hover: #1b2331;
     --stride-row-overdue-hover: #2a1a1e;
@@ -122,32 +120,71 @@ html.in-stride .task-row:hover { background: var(--stride-row-hover); }
 html.in-stride .task-row.is-overdue:hover { background: var(--stride-row-overdue-hover); }
 html.in-stride .task-row.is-today:hover { background: var(--stride-row-today-hover); }
 
-/* ---------- ヘッダー（STRIDE のホームのカードと同じグラデーション） ---------- */
-html.in-stride .app-header {
-  position: relative;
-  overflow: hidden;
-  background: var(--stride-hero);
-  padding-top: env(safe-area-inset-top, 0px);
+/* ---------- 上部バー（STRIDE の他の画面と同じ。stride-bridge.js が追加する） ---------- */
+html.in-stride {
+  --stride-font: system-ui, -apple-system, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", Meiryo, sans-serif;
+  --stride-font-num: "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", "Roboto", system-ui, sans-serif;
 }
-html.in-stride .app-header::after {
-  /* 斜めのライン装飾 */
-  content: ""; position: absolute; right: -60px; top: -90px; width: 320px; height: 320px;
-  background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0 2px, transparent 2px 14px);
-  border-radius: 50%; pointer-events: none;
+.s-appbar {
+  position: sticky; top: 0; z-index: 80;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) 16px 10px;
+  background: color-mix(in srgb, var(--color-bg) 85%, transparent);
+  backdrop-filter: saturate(160%) blur(14px);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-family: var(--stride-font);
+  line-height: 1.6;
 }
-html.in-stride .header-inner { position: relative; z-index: 1; }
-/* ヘッダーを position: relative にしたため、重ねて表示するサマリーを手前に出す */
-html.in-stride .summary { position: relative; z-index: 2; }
-html.in-stride .brand-mark,
-html.in-stride .brand-desc { display: none; }
-html.in-stride .brand-title { font-size: 26px; font-weight: 800; letter-spacing: 0.02em; }
-.stride-eyebrow {
-  display: block; margin: 0 0 2px;
-  font-family: "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
-  font-size: 11px; font-weight: 800; font-style: italic; letter-spacing: 0.22em;
-  color: rgba(255, 255, 255, 0.75);
+.s-appbar-inner { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; max-width: 640px; margin: 0 auto; }
+.s-appbar-left { display: grid; line-height: 1.15; }
+.s-brand {
+  font-family: var(--stride-font-num); font-size: 11px; font-weight: 800; font-style: italic;
+  letter-spacing: 0.22em; color: var(--color-text-subtle);
 }
-.stride-eyebrow b { color: #8fc0ff; font-style: normal; margin-left: 2px; }
+.s-brand b { color: var(--color-primary); font-style: normal; margin-left: 2px; }
+.s-title { margin: 2px 0 0; font-size: 22px; font-weight: 800; letter-spacing: 0.02em; }
+.s-clock { display: grid; justify-items: end; line-height: 1.1; }
+.s-clock-date { font-size: 12px; font-weight: 600; color: var(--color-text-muted); }
+.s-clock-time {
+  font-family: var(--stride-font-num); font-size: 24px; font-weight: 800;
+  font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+}
+.s-clock-time small { font-size: 12px; font-weight: 700; color: var(--color-text-subtle); margin-left: 3px; }
+.s-clock-time .colon { animation: s-blink 1s steps(1) infinite; }
+@keyframes s-blink { 50% { opacity: 0.25; } }
+@media (max-width: 400px) {
+  .s-appbar { padding-left: 12px; padding-right: 12px; }
+  .s-title { font-size: 19px; }
+  .s-clock-time { font-size: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .s-clock-time .colon { animation: none; }
+}
+
+/* ---------- 元のヘッダー：紺の帯をやめ、ボタンの列だけを残す ---------- */
+html.in-stride .app-header { background: transparent; color: var(--color-text); }
+html.in-stride .header-inner { padding-top: 12px; padding-bottom: 0; justify-content: flex-end; }
+html.in-stride .app-header .brand,
+html.in-stride .today-label { display: none; }
+html.in-stride .header-actions { margin-left: auto; }
+/* 帯の上用だった白抜きボタンを、通常のボタンに戻す */
+html.in-stride .app-header .btn {
+  border-color: var(--color-border); background: var(--color-surface); color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+}
+html.in-stride .app-header .btn:hover { border-color: var(--color-border-strong); background: var(--color-surface-muted); }
+html.in-stride .app-header .btn-primary,
+html.in-stride .app-header .btn-primary:hover {
+  border-color: transparent; background: var(--stride-btn); color: #fff;
+  box-shadow: 0 4px 14px rgba(42, 120, 214, 0.3);
+}
+html.in-stride .app-header .btn:focus-visible { box-shadow: 0 0 0 3px var(--color-primary-ring); }
+html.in-stride .header-icon { color: var(--color-text-muted); }
+/* 集計カードは帯に重ねず、普通に並べる */
+html.in-stride .summary { margin-top: 12px; }
+/* 一括操作バーが上部バーに隠れないようにする */
+html.in-stride .bulk-bar { top: calc(env(safe-area-inset-top, 0px) + 64px); }
 
 /* ---------- ボタン・カード ---------- */
 html.in-stride .btn { border-radius: 14px; font-weight: 700; }
@@ -158,12 +195,6 @@ html.in-stride .btn-primary {
 }
 html.in-stride .btn-primary:hover { background: var(--stride-btn); filter: brightness(1.06); border-color: transparent; }
 html.in-stride .btn-primary { color: #fff; }
-/* ヘッダー（青いグラデーション）の上の「タスクを追加」は白いボタンのまま（背景と同化しないように） */
-html.in-stride .app-header .btn-primary,
-html.in-stride .app-header .btn-primary:hover {
-  background: #fff; color: #0c2040; border-color: #fff;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18); filter: none;
-}
 html.in-stride .summary,
 html.in-stride .panel { border-radius: 18px; }
 

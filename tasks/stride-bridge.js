@@ -1,5 +1,5 @@
 // STRIDE との連携（GitHub Pages・ローカルサーバーで開いたときだけ動く）
-// - 見出しを「STRIDE› / タスク」にし、STRIDE と共通の下部タブを表示する
+// - STRIDE と同じ上部バー（ロゴ・画面名・日付と時刻）と、共通の下部タブを表示する
 // - 「データはこの端末の中だけ」の表示を追加する
 // - Service Worker を登録し、オフラインでも開けるようにする
 // claude.ai 版（cloud-sync.js が同期を行う版）では何もしない。Task Board 本体（app.js）は変更しない。
@@ -11,19 +11,40 @@
   }
   document.documentElement.classList.add('in-stride');
 
-  // 見出し: 小さく「STRIDE›」、大きく「タスク」
-  const title = document.querySelector('.brand-title');
-  if (title) {
-    const eyebrow = document.createElement('span');
-    eyebrow.className = 'stride-eyebrow';
-    eyebrow.setAttribute('aria-hidden', 'true');
-    eyebrow.append('STRIDE');
-    const mark = document.createElement('b');
-    mark.textContent = '›';
-    eyebrow.append(mark);
-    title.before(eyebrow);
-    title.textContent = 'タスク';
+  // 上部バー（STRIDE の他の画面と同じ）：左に「STRIDE›」と「タスク」、右に日付と時刻（1 秒ごとに更新）
+  const appbar = document.createElement('header');
+  appbar.className = 's-appbar';
+  appbar.innerHTML = [
+    '<div class="s-appbar-inner">',
+    '  <div class="s-appbar-left">',
+    '    <span class="s-brand" aria-hidden="true">STRIDE<b>›</b></span>',
+    '    <h1 class="s-title">タスク</h1>',
+    '  </div>',
+    '  <div class="s-clock" aria-label="現在の日時">',
+    '    <span class="s-clock-date"></span>',
+    '    <time class="s-clock-time"></time>',
+    '  </div>',
+    '</div>',
+  ].join('');
+  const skip = document.querySelector('.skip-link');
+  if (skip) skip.after(appbar);
+  else document.body.prepend(appbar);
+  // 元の見出し（Task Board）は非表示にするので、見出しの役割は上部バーに移す
+  const oldTitle = document.querySelector('.brand-title');
+  if (oldTitle) oldTitle.setAttribute('aria-hidden', 'true');
+
+  const WD = ['日', '月', '火', '水', '木', '金', '土'];
+  const dateEl = appbar.querySelector('.s-clock-date');
+  const timeEl = appbar.querySelector('.s-clock-time');
+  const pad = (n) => String(n).padStart(2, '0');
+  function tick() {
+    const now = new Date();
+    dateEl.textContent = `${now.getMonth() + 1}月${now.getDate()}日(${WD[now.getDay()]})`;
+    timeEl.dateTime = now.toISOString();
+    timeEl.innerHTML = `${pad(now.getHours())}<span class="colon">:</span>${pad(now.getMinutes())}<small>${pad(now.getSeconds())}</small>`;
   }
+  tick();
+  setInterval(tick, 1000);
 
   // 保存場所の表示はサマリー（未完了・作業中…）のすぐ下に置く
   // （ヘッダーの下端はサマリーが重なるため、そこに置くと隠れてしまう）
