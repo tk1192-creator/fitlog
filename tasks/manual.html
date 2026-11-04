@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Task Board 使い方</title>
+  <meta name="description" content="Task Board（タスク・案件の進捗管理ツール）の使い方マニュアル">
+  <style>
+    /* レイアウト：左に目次（PC）、右に本文。スマホでは目次を本文の上に置く */
+    :root {
+      --bg: #eef2f7;
+      --surface: #ffffff;
+      --ink: #15294a;
+      --text: #1a2840;
+      --muted: #56677e;
+      --line: #dce3ec;
+      --accent: #2d5ea8;
+      --accent-soft: #e9f0fa;
+      --warn-soft: #fff1e0;
+      --warn-text: #9a4b05;
+      --danger: #c8372d;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Segoe UI", "Yu Gothic UI", "Meiryo UI", "Meiryo", system-ui, sans-serif;
+      --font-num: "Bahnschrift", "DIN Alternate", "DIN Condensed", "Roboto Condensed", var(--font-sans);
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 15.5px;
+      line-height: 1.8;
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+    a { color: var(--accent); text-underline-offset: 3px; }
+    a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+    img { max-width: 100%; height: auto; }
+    kbd {
+      display: inline-block;
+      min-width: 1.6em;
+      padding: 0 6px;
+      border: 1px solid #c8d1dd;
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      background: var(--surface);
+      font-family: var(--font-sans);
+      font-size: 0.85em;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    /* ヘッダー帯 */
+    .masthead {
+      background: var(--ink);
+      color: #fff;
+      padding-block: 36px 40px;
+      padding-top: calc(36px + env(safe-area-inset-top, 0px));
+    }
+    .wrap { width: 100%; max-width: 1180px; margin: 0 auto; padding-inline: 24px; }
+    .masthead .eyebrow { margin: 0; color: rgba(226, 234, 246, 0.72); font-size: 13px; font-weight: 600; }
+    .masthead h1 { margin: 4px 0 8px; font-size: clamp(26px, 4vw, 36px); font-weight: 800; line-height: 1.3; text-wrap: balance; }
+    .masthead p { margin: 0; max-width: 46em; color: rgba(226, 234, 246, 0.85); }
+    .masthead .back {
+      display: inline-flex;
+      margin-top: 18px;
+      padding: 6px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 6px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .masthead .back:hover { background: rgba(255, 255, 255, 0.08); }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr);
+      gap: 32px;
+      padding-block: 32px 64px;
+    }
+
+    /* 目次 */
+    .toc {
+      position: sticky;
+      top: calc(16px + env(safe-area-inset-top, 0px));
+      align-self: start;
+      max-height: calc(100vh - 32px);
+      overflow: auto;
+      padding: 16px 0;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface);
+    }
+    .toc h2 { margin: 0 16px 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
+    .toc ol { margin: 0; padding: 0; list-style: none; counter-reset: toc; }
+    .toc li { counter-increment: toc; }
+    .toc a {
+      display: flex;
+      gap: 8px;
+      padding: 5px 16px;
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+      text-decoration: none;
+    }
+    .toc a::before {
+      content: counter(toc, decimal-leading-zero);
+      min-width: 1.6em;
+      color: var(--muted);
+      font-family: var(--font-num);
+      font-variant-numeric: tabular-nums;
+    }
+    .toc a:hover { background: var(--accent-soft); color: var(--accent); }
+
+    /* 本文 */
+    main { min-width: 0; display: grid; gap: 24px; }
+    main { counter-reset: sec; }
+    section {
+      min-width: 0;
+      padding: 28px 32px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface);
+      scroll-margin-top: 16px;
+    }
+    section > h2 {
+      counter-increment: sec;
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin: 0 0 12px;
+      color: var(--ink);
+      font-size: 22px;
+      line-height: 1.4;
+      text-wrap: balance;
+    }
+    section > h2::before {
+      content: counter(sec, decimal-leading-zero);
+      color: var(--accent);
+      font-family: var(--font-num);
+      font-size: 26px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    h3 { margin: 24px 0 6px; color: var(--ink); font-size: 17px; }
+    p, ul, ol { margin: 0 0 12px; }
+    p, li { max-width: 46em; }
+    ul, ol { padding-left: 1.4em; }
+    li + li { margin-top: 4px; }
+
+    .steps { counter-reset: step; list-style: none; padding: 0; }
+    .steps > li {
+      counter-increment: step;
+      position: relative;
+      padding-left: 2.4em;
+    }
+    .steps > li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0.15em;
+      display: grid;
+      place-items: center;
+      width: 1.6em;
+      height: 1.6em;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--font-num);
+      font-size: 0.85em;
+      font-weight: 600;
+    }
+
+    figure { margin: 16px 0 20px; }
+    figure img {
+      display: block;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: 0 1px 2px rgba(21, 41, 74, 0.06), 0 8px 24px rgba(21, 41, 74, 0.08);
+    }
+    figcaption { margin-top: 8px; color: var(--muted); font-size: 13px; }
+    .figure-phone img { width: 300px; }
+
+    .note, .caution {
+      margin: 12px 0;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14.5px;
+    }
+    .note { background: var(--accent-soft); }
+    .caution { background: var(--warn-soft); color: var(--warn-text); }
+    .note > :last-child, .caution > :last-child { margin-bottom: 0; }
+
+    .table-wrap { overflow-x: auto; margin: 12px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+    th, td { padding: 8px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: #f7f9fc; color: var(--muted); font-size: 13px; font-weight: 700; white-space: nowrap; }
+
+    .badge { display: inline-block; padding: 0 8px; border-radius: 999px; font-size: 13px; font-weight: 700; line-height: 1.7; }
+    .b-overdue { background: var(--danger); color: #fff; }
+    .b-today { background: #c96a0a; color: #fff; }
+
+    details { margin: 8px 0; border: 1px solid var(--line); border-radius: 8px; }
+    summary { padding: 10px 14px; cursor: pointer; font-weight: 700; }
+    details > div { padding: 0 14px 12px; }
+
+    footer { padding-block: 0 40px; color: var(--muted); font-size: 13px; }
+
+    @media (max-width: 860px) {
+      .layout { grid-template-columns: minmax(0, 1fr); gap: 20px; padding-block: 20px 40px; }
+      .toc { position: static; max-height: none; }
+      .toc ol { columns: 2; column-gap: 8px; }
+      section { padding: 20px 18px; }
+      .wrap { padding-inline: 16px; }
+    }
+    @media (max-width: 480px) {
+      .toc ol { columns: 1; }
+      .figure-phone img { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="masthead">
+    <div class="wrap">
+      <p class="eyebrow">マニュアル</p>
+      <h1>Task Board の使い方</h1>
+      <p>「何を、いつまでに、誰がやるか」を 1 つの画面で管理し、対応漏れを防ぐためのツールです。ここでは、毎日の使い方から Outlook・Webex・Teams・iPhone の Claude アプリとの連携まで、順番に説明します。</p>
+      <a class="back" href="index.html">Task Board を開く</a>
+    </div>
+  </header>
+
+  <div class="wrap layout">
+    <nav class="toc" aria-label="目次">
+      <h2>目次</h2>
+      <ol>
+        <li><a href="#start">はじめに・2 つの版</a></li>
+        <li><a href="#screen">画面の見方</a></li>
+        <li><a href="#add">タスクを登録する</a></li>
+        <li><a href="#views">一覧・ボード・ガント・カレンダー</a></li>
+        <li><a href="#today">今日やる・マイタスク</a></li>
+        <li><a href="#filter">検索・絞り込み・並び替え</a></li>
+        <li><a href="#detail">詳細パネル</a></li>
+        <li><a href="#repeat">繰り返し・テンプレート・複製</a></li>
+        <li><a href="#bulk">まとめて操作・元に戻す</a></li>
+        <li><a href="#report">報告文と Outlook・Webex・Teams</a></li>
+        <li><a href="#iphone">iPhone の Claude アプリで使う</a></li>
+        <li><a href="#settings">設定と自動化ルール</a></li>
+        <li><a href="#backup">バックアップ・書き出し</a></li>
+        <li><a href="#keys">キーボードショートカット</a></li>
+        <li><a href="#faq">困ったとき</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="start" aria-labelledby="h-start">
+        <h2 id="h-start">はじめに・2 つの版</h2>
+        <p>Task Board には、データの置き場所が違う 2 つの版があります。画面と操作はどちらも同じです。</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>版</th><th>開き方</th><th>データの保存場所</th><th>向いている使い方</th></tr></thead>
+            <tbody>
+              <tr><td>ローカル版</td><td>フォルダの <code>index.html</code> をブラウザで開く</td><td>この PC のブラウザの中だけ</td><td>社外秘の案件、お客様名や IP アドレスを含むタスク</td></tr>
+              <tr><td>claude.ai 版</td><td>claude.ai または Claude アプリで、公開済みの Task Board を開く</td><td>claude.ai（自分だけが見られる領域）</td><td>PC と iPhone で同じタスクを見たいとき</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="caution">
+          <p><strong>claude.ai 版には、お客様名・IP アドレス・ホスト名などを入力しないでください。</strong>データは Anthropic のサーバーに保存されます。会社の規定でクラウドへの保存が認められているかも確認してください。</p>
+        </div>
+        <h3>ローカル版の起動</h3>
+        <ol class="steps">
+          <li>フォルダの <code>index.html</code> をダブルクリックします（Chrome・Edge を推奨）。</li>
+          <li>初回は空の画面に「最初のタスクを登録する」「サンプルデータを追加する」が表示されます。操作を試すときはサンプルデータを追加してください。</li>
+        </ol>
+        <p>画面上部に「データを保存できません」と出た場合は、README の「ローカルサーバーで起動する」の手順で開いてください。</p>
+      </section>
+
+      <section id="screen" aria-labelledby="h-screen">
+        <h2 id="h-screen">画面の見方</h2>
+        <figure>
+          <img src="manual-images/overview.png" alt="Task Board の画面全体。上から、濃紺のヘッダー（今日の日付・報告文を作成・タスクを追加）、サマリー（未完了・作業中・確認待ち・期限切れ）、検索・絞り込み、タスク一覧の順に並ぶ" width="1280" height="860" loading="lazy">
+          <figcaption>画面全体（サンプルデータを追加した状態）</figcaption>
+        </figure>
+        <ul>
+          <li><strong>ヘッダー</strong>：今日の日付（期限判定の基準）、使い方（このマニュアル）、設定、「報告文を作成」、「＋ タスクを追加」。</li>
+          <li><strong>サマリー</strong>：未完了・作業中・確認待ち・期限切れの件数です。絞り込みに関係なく<strong>全タスク</strong>を数えます。押すとその条件で一覧を絞り込み、もう一度押すと解除します。</li>
+          <li><strong>検索・絞り込み</strong>：キーワードや状態などで一覧を絞ります（6 章）。</li>
+          <li><strong>タスク一覧</strong>：右上で「今日やる」「マイタスク」と、表示の種類（一覧・ボード・ガント・カレンダー）を切り替えます。</li>
+          <li><strong>バックアップ・補助操作</strong>：画面のいちばん下。JSON・CSV・予定表の書き出し、テンプレート、サンプルデータ。</li>
+        </ul>
+        <h3>期限の色分け</h3>
+        <p>判定は、お使いの端末の日付が基準です。完了したタスクは、期限が過ぎていても期限切れになりません。</p>
+        <ul>
+          <li><span class="badge b-overdue">期限切れ</span> 期限が今日より前で、完了していないタスク。行が赤くなり、何日過ぎたかを表示します。</li>
+          <li><span class="badge b-today">本日期限</span> 期限が今日で、完了していないタスク。行がオレンジになります。</li>
+          <li>期限まで 3 日以内のタスクには「あとN日」と表示します。</li>
+        </ul>
+      </section>
+
+      <section id="add" aria-labelledby="h-add">
+        <h2 id="h-add">タスクを登録する</h2>
+        <figure>
+          <img src="manual-images/form.png" alt="タスクを追加するフォーム。タスク名、案件名、担当者、開始日、期限、状態、繰り返し、優先度、先行タスク、予定時間、実績時間、タグ、詳細説明の入力欄がある" width="1280" height="1000" loading="lazy">
+          <figcaption>タスクを追加するフォーム</figcaption>
+        </figure>
+        <ol class="steps">
+          <li>右上の「＋ タスクを追加」を押します（キーボードの <kbd>N</kbd> でも開きます）。</li>
+          <li><strong>タスク名・担当者・期限</strong>を入力します（この 3 つが必須です）。案件名と担当者は、登録済みの値が候補に出ます。</li>
+          <li>必要に応じて、残りの項目を入力します。
+            <ul>
+              <li><strong>開始日</strong>：入れると、ガントチャートに開始日〜期限の横棒で表示します。</li>
+              <li><strong>繰り返し</strong>：毎日・平日・毎週・毎月。完了にすると次回分を自動で作ります（8 章）。</li>
+              <li><strong>先行タスク</strong>：このタスクの前に終わらせる必要があるタスク。終わるまで「待ち」と表示します。</li>
+              <li><strong>予定時間・実績時間</strong>：時間単位（0.25 = 15 分）。</li>
+              <li><strong>タグ</strong>：カンマ（,）か読点（、）で区切って複数付けられます（例：<code>手順書, レビュー</code>）。</li>
+            </ul>
+          </li>
+          <li>「登録する」を押します。入力漏れがあると、その項目の下に赤字で理由が表示されます。</li>
+        </ol>
+        <p>テンプレートがある場合は、フォームの一番上の「テンプレートから入力」で呼び出せます（8 章）。claude.ai 版では「Claude で入力」も使えます（11 章）。</p>
+        <p>編集は、一覧の鉛筆アイコンか、詳細パネルの「編集」から行います。保存していない入力があるまま閉じようとすると、破棄してよいか確認します。</p>
+      </section>
+
+      <section id="views" aria-labelledby="h-views">
+        <h2 id="h-views">一覧・ボード・ガント・カレンダー</h2>
+        <p>タスク一覧の右上のボタンで、4 つの表示を切り替えます。<kbd>V</kbd> キーで順番に切り替わります。選んだ表示は次回も使われます。どの表示にも、検索・絞り込みの条件がそのまま効きます。</p>
+        <h3>一覧</h3>
+        <p>表の形で並べます。状態はプルダウンからその場で変更できます。☀ は「今日やる」（5 章）、目のアイコンは詳細、鉛筆は編集、ゴミ箱は削除です。スマートフォンではカードの形で表示します。</p>
+        <h3>ボード（カンバン）</h3>
+        <figure>
+          <img src="manual-images/board.png" alt="ボード表示。未着手・作業中・確認待ち・完了の 4 列にタスクのカードが並ぶ" width="1280" height="1150" loading="lazy">
+          <figcaption>ボード：カードを別の列へドラッグすると状態が変わります</figcaption>
+        </figure>
+        <h3>ガントチャート</h3>
+        <figure>
+          <img src="manual-images/gantt.png" alt="ガントチャート。左にタスク名、右に日付が並び、開始日から期限までを横棒で表示。今日の位置に縦線がある" width="1280" height="1050" loading="lazy">
+          <figcaption>ガント：開始日〜期限を横棒で表示。開始日のないタスクは期限の日にひし形で表示します</figcaption>
+        </figure>
+        <ul>
+          <li>表示するのは 5 週間分です。「前の週」「次の週」で移動し、「今日」で戻ります。</li>
+          <li>棒の色：灰色＝未着手、青＝作業中、紫＝確認待ち、薄い灰色＝完了、赤＝期限切れ。</li>
+          <li>棒を押すと詳細パネルが開きます。</li>
+        </ul>
+        <h3>カレンダー</h3>
+        <figure>
+          <img src="manual-images/calendar.png" alt="月表示のカレンダー。期限の日のマスにタスク名が表示され、今日のマスは青い枠で強調されている" width="1280" height="1250" loading="lazy">
+          <figcaption>カレンダー：期限の日にタスクを表示します</figcaption>
+        </figure>
+        <p>「前の月」「次の月」で移動し、「今月」で戻ります。スマートフォンでは、予定のある日だけを日付順の一覧で表示します。</p>
+      </section>
+
+      <section id="today" aria-labelledby="h-today">
+        <h2 id="h-today">今日やる・マイタスク</h2>
+        <h3>今日やる（☀）</h3>
+        <p>今日取り組むタスクに印を付ける機能です。日付が変わると印は自動で外れるので、毎朝その日の分を選び直します。</p>
+        <ol class="steps">
+          <li>一覧の ☀ アイコン、または詳細パネルの「今日やる」を押します。</li>
+          <li>一覧の右上の「今日やる」を押すと（<kbd>T</kbd> キーでも可）、☀ を付けたタスクと<strong>本日期限</strong>のタスクだけを表示します。横の数字は、そのうち未完了の件数です。</li>
+        </ol>
+        <h3>マイタスク</h3>
+        <p>自分が担当のタスクだけを表示します（<kbd>M</kbd> キーでも可）。「自分の名前」は設定で決めます（初期値は「自分」）。担当者欄と同じ書き方にしてください。</p>
+      </section>
+
+      <section id="filter" aria-labelledby="h-filter">
+        <h2 id="h-filter">検索・絞り込み・並び替え</h2>
+        <ul>
+          <li><strong>キーワード</strong>（<kbd>/</kbd> キーで移動）：タスク名・案件名・担当者・詳細説明・タグが対象です。スペースで区切ると、すべてを含むタスクに絞ります。全角・半角、大文字・小文字は区別しません。</li>
+          <li><strong>状態・優先度・担当者・タグ・期限</strong>：組み合わせて使えます。期限は「期限切れ」「本日期限」「今後7日間（未完了）」「今日やる」から選びます。</li>
+          <li><strong>並び替え</strong>：期限が近い順／更新が新しい順／優先度が高い順。期限順と優先度順では、完了したタスクを末尾にまとめます。</li>
+          <li>「条件をクリア」で絞り込みをまとめて解除します（並び替えはそのまま）。</li>
+        </ul>
+      </section>
+
+      <section id="detail" aria-labelledby="h-detail">
+        <h2 id="h-detail">詳細パネル</h2>
+        <figure>
+          <img src="manual-images/detail.png" alt="右側に開いた詳細パネル。状態の変更、今日やる・編集・複製・テンプレートに保存・共有・削除のボタン、各項目、作業時間の欄が並ぶ" width="1280" height="1000" loading="lazy">
+          <figcaption>タスク名を押すと、右側に詳細パネルが開きます</figcaption>
+        </figure>
+        <ul>
+          <li><strong>上部のボタン</strong>：状態の変更、今日やる、編集、複製、テンプレートに保存、共有、削除。</li>
+          <li><strong>先行タスク／このタスクを待っているタスク</strong>：タスク名を押すと、そのタスクの詳細に切り替わります。先行タスクを完了にすると、「〇〇に着手できます」とお知らせします。</li>
+          <li><strong>作業時間</strong>：「＋15分」「＋30分」「＋1時間」で実績時間を記録します。予定時間を超えると赤で知らせます。</li>
+          <li><strong>チェックリスト</strong>：作業の手順や確認項目を登録し、チェックを付けて進めます（例：事前確認 → 作業 → 事後確認 → 切戻し準備）。進捗は一覧にも「2/4」のように表示します。</li>
+          <li><strong>メモ</strong>：対応内容や連絡事項を残します（<kbd>Ctrl</kbd> + <kbd>Enter</kbd> でも追加）。</li>
+          <li><strong>対応履歴</strong>：作成・編集・状態変更・メモ・チェックリストの変更が、新しい順に自動で残ります。状態変更は「未着手 → 作業中」のように前後を表示します。</li>
+        </ul>
+        <p><kbd>Esc</kbd> キーか右上の × で閉じます。</p>
+      </section>
+
+      <section id="repeat" aria-labelledby="h-repeat">
+        <h2 id="h-repeat">繰り返し・テンプレート・複製</h2>
+        <h3>繰り返しタスク</h3>
+        <p>定例会議の議事録や週報など、決まった周期で発生するタスクに使います。</p>
+        <ul>
+          <li>登録フォームの「繰り返し」で、毎日・平日（月〜金）・毎週・毎月を選びます。</li>
+          <li>タスクを<strong>完了にすると、次回分を自動で作ります</strong>。チェックリストは未完了に戻り、メモと履歴は引き継ぎません。</li>
+          <li>遅れて完了した場合も、次回の期限は今日以降の日になります。「毎月」で 31 日のように月末の日を選ぶと、その月の末日にそろえます。</li>
+          <li>完了 → 未完了 → 完了と切り替えても、次回分が二重にできることはありません。</li>
+        </ul>
+        <h3>テンプレート</h3>
+        <ol class="steps">
+          <li>雛形にしたいタスクの詳細パネルで「テンプレートに保存」を押し、名前を付けます。</li>
+          <li>「＋ タスクを追加」のフォームの一番上の「テンプレートから入力」で選びます。タスク名・案件名・担当者・優先度・繰り返し・タグ・詳細説明・チェックリストが入ります。</li>
+          <li>期限を入れて登録します。</li>
+        </ol>
+        <p>テンプレートの確認と削除は、画面下部の「テンプレート」から行います。</p>
+        <h3>複製</h3>
+        <p>詳細パネルの「複製」で、同じ内容の新しいタスクを作ります。タスク名に「（コピー）」が付き、状態は未着手、チェックリストは未完了の状態で引き継ぎます。</p>
+      </section>
+
+      <section id="bulk" aria-labelledby="h-bulk">
+        <h2 id="h-bulk">まとめて操作・元に戻す</h2>
+        <figure>
+          <img src="manual-images/bulk.png" alt="一覧で 2 件のタスクにチェックを付けた状態。一覧の上に濃紺のバーが出て、状態の変更、優先度の変更、今日やるに追加、削除、選択を解除のボタンが並ぶ" width="1280" height="1050" loading="lazy">
+          <figcaption>一覧の左端のチェックで選ぶと、操作のバーが出ます</figcaption>
+        </figure>
+        <ol class="steps">
+          <li>一覧表示で、左端のチェックボックスでタスクを選びます（見出しのチェックで、表示中のすべてを選択）。</li>
+          <li>バーで、状態の変更・優先度の変更・今日やるに追加・削除を選びます。変更は各タスクの対応履歴にも残ります。</li>
+        </ol>
+        <p><strong>削除の取り消し</strong>：削除の直後に出る通知の「元に戻す」を押すと、メモや履歴も含めて元に戻ります（通知が出ている約 8 秒の間）。</p>
+      </section>
+
+      <section id="report" aria-labelledby="h-report">
+        <h2 id="h-report">報告文と Outlook・Webex・Teams</h2>
+        <figure>
+          <img src="manual-images/report.png" alt="報告文を作成するダイアログ。報告の種類と対象の担当者を選ぶ欄、作成された文面、予定表・Outlook でメール作成・コピー（Webex / Teams 用）のボタンがある" width="1280" height="950" loading="lazy">
+          <figcaption>報告文を作成する画面</figcaption>
+        </figure>
+        <ol class="steps">
+          <li>ヘッダーの「報告文を作成」を押します。</li>
+          <li>報告の種類を選びます。
+            <ul>
+              <li><strong>状況報告（期限別）</strong>：未完了のタスクを「期限切れ／本日期限／今後7日以内／8日以降」に分けて並べます。上長への進捗報告向けです。</li>
+              <li><strong>今日の予定（出社時）</strong>：「今日やる」と本日期限のタスク、それに期限切れのタスク。Webex の出社連絡向けです。</li>
+              <li><strong>今日の実績（退社時）</strong>：今日完了したタスクと、今日進めたタスク。明日が期限のタスクも添えます。</li>
+            </ul>
+          </li>
+          <li>必要なら対象の担当者を選び、文面を手直しします。</li>
+          <li>送り先に合わせてボタンを押します。
+            <ul>
+              <li><strong>コピー（Webex / Teams 用）</strong>：Webex のスペースや Teams のチャットに <kbd>Ctrl</kbd> + <kbd>V</kbd> で貼り付けます。</li>
+              <li><strong>Outlook でメール作成</strong>：件名と本文の入った下書きを開きます。宛先を入れて、Outlook から送信してください。</li>
+            </ul>
+          </li>
+        </ol>
+        <div class="note">
+          <p>このツールから自動で送信することはありません。送信は、必ず Outlook・Webex・Teams で内容を確認してから行ってください。</p>
+        </div>
+        <p>タスク 1 件だけを伝えたいときは、詳細パネルの「共有」を使います。</p>
+        <h3>メールが開かないとき</h3>
+        <ul>
+          <li>Windows の既定のメールアプリが Outlook になっているか確認してください（設定 → アプリ → 既定のアプリ → 「MAILTO」）。</li>
+          <li>本文が長い場合は、件名だけで下書きを開き、本文をクリップボードにコピーします。下書きの本文欄に貼り付けてください。</li>
+          <li>claude.ai 版や Claude アプリでは、メールが開かないことがあります。その場合は「コピー」で文面をコピーしてください。</li>
+        </ul>
+        <h3>Outlook の予定表に期限を入れる（ローカル版のみ）</h3>
+        <p>詳細パネル →「共有」→「予定表（.ics）」で 1 件、画面下部の「予定表（.ics）」で表示中の未完了タスクをまとめて書き出します。ファイルを開くと Outlook に取り込めます。期限日の終日予定として登録され、前日の 9:00 に通知します。</p>
+      </section>
+
+      <section id="iphone" aria-labelledby="h-iphone">
+        <h2 id="h-iphone">iPhone の Claude アプリで使う</h2>
+        <p>claude.ai 版を開くと、PC のブラウザと iPhone の Claude アプリで同じタスクを扱えます。どちらかで変更すると、もう一方にもすぐに反映されます。</p>
+        <figure class="figure-phone">
+          <img src="manual-images/mobile.png" alt="スマートフォン幅の画面。ヘッダー、2 列のサマリー、絞り込み、タスクのカードが縦に並ぶ" width="390" height="1500" loading="lazy">
+          <figcaption>スマートフォンでの表示</figcaption>
+        </figure>
+        <h3>開き方</h3>
+        <ol class="steps">
+          <li>PC の claude.ai で、公開済みの Task Board を開きます（Claude Code から受け取ったリンク）。必要ならサイドバーにピン留めしておきます。</li>
+          <li>iPhone の Claude アプリで同じアカウントにログインし、同じ Task Board を開きます。</li>
+          <li>ヘッダーに「claude.ai に保存済み」と表示されていれば同期しています。</li>
+        </ol>
+        <h3>同期の表示</h3>
+        <ul>
+          <li><strong>claude.ai に保存済み</strong>：最後に保存した時刻を表示します。</li>
+          <li><strong>claude.ai に保存中…</strong>：送信中です。</li>
+          <li><strong>赤い表示</strong>：保存できなかった変更があります。この端末には残っているので、表示を押すと送り直します。</li>
+        </ul>
+        <h3>Claude で入力・手順の提案（claude.ai 版のみ）</h3>
+        <ul>
+          <li><strong>Claude で入力</strong>：「＋ タスクを追加」の一番上に、文章を書く欄があります。たとえば「来週火曜までにA社の見積書を作る。担当は佐藤さん。急ぎ」と書いて「Claude で入力」を押すと、タスク名・担当者・期限・優先度などを埋めます。内容を確認してから登録してください。iPhone の音声入力とも相性が良い機能です。</li>
+          <li><strong>Claude で手順を提案</strong>：詳細パネルのチェックリスト欄にあります。タスクを進める手順の案を Claude が出し、確認してから追加できます。</li>
+          <li>初めて使うときは、Claude を使ってよいかの確認が表示されます。Claude の利用は、お使いの Claude アカウントの利用量に含まれます。</li>
+        </ul>
+        <div class="caution">
+          <p>claude.ai 版には、お客様名・IP アドレス・ホスト名などを入力しないでください。案件名は社内の略称にするなど、工夫してください。</p>
+        </div>
+        <h3>claude.ai 版でできないこと</h3>
+        <ul>
+          <li>予定表（.ics）の書き出し（claude.ai からは保存できない形式のため）。ローカル版をお使いください。</li>
+          <li>ローカル版とのデータの自動共有。移すときは、ローカル版で「JSONをエクスポート」し、claude.ai 版で「JSONからインポート」します。</li>
+        </ul>
+      </section>
+
+      <section id="settings" aria-labelledby="h-settings">
+        <h2 id="h-settings">設定と自動化ルール</h2>
+        <figure>
+          <img src="manual-images/settings.png" alt="設定ダイアログ。自分の名前の入力欄と、2 つの自動化ルールのチェックボックスがある" width="1280" height="760" loading="lazy">
+          <figcaption>ヘッダーの歯車アイコンで開きます</figcaption>
+        </figure>
+        <ul>
+          <li><strong>自分の名前</strong>：マイタスクで使う名前です。</li>
+          <li><strong>チェックリストの項目がすべて完了したら、状態を「確認待ち」にする</strong>：作業が終わったら自動でレビュー待ちに回したいときに使います（未着手・作業中のタスクだけが対象）。</li>
+          <li><strong>状態を「作業中」にしたら、「今日やる」に追加する</strong>：着手したタスクを今日の予定に自動で入れます。</li>
+        </ul>
+        <p>ルールは初期状態ではオフです。設定はバックアップ（JSON）にも含まれます。</p>
+      </section>
+
+      <section id="backup" aria-labelledby="h-backup">
+        <h2 id="h-backup">バックアップ・書き出し</h2>
+        <ul>
+          <li><strong>JSONをエクスポート</strong>：全タスク（チェックリスト・メモ・履歴を含む）、テンプレート、設定を 1 つのファイルに書き出します。定期的に実行してください。</li>
+          <li><strong>JSONからインポート</strong>：書き出したファイルで復元します。<strong>今のデータはすべて置き換わります</strong>（実行前に確認が出ます）。形式がおかしいファイルは読み込まず、今のデータも消しません。古い版（v1・v2）のファイルも読み込めます。</li>
+          <li><strong>CSV（Excel）</strong>：表示中のタスクを、Excel で文字化けしない形式で書き出します。</li>
+          <li><strong>予定表（.ics）</strong>：10 章を参照してください（ローカル版のみ）。</li>
+        </ul>
+        <div class="caution">
+          <p>ローカル版のデータは、このブラウザの中にだけ保存されます。ブラウザの「閲覧データの削除」で消えることがあり、シークレットウィンドウでは閉じると消えます。</p>
+        </div>
+      </section>
+
+      <section id="keys" aria-labelledby="h-keys">
+        <h2 id="h-keys">キーボードショートカット</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>キー</th><th>動作</th></tr></thead>
+            <tbody>
+              <tr><td><kbd>N</kbd></td><td>タスクを追加</td></tr>
+              <tr><td><kbd>/</kbd></td><td>キーワード検索へ移動</td></tr>
+              <tr><td><kbd>V</kbd></td><td>表示を切り替え（一覧 → ボード → ガント → カレンダー）</td></tr>
+              <tr><td><kbd>T</kbd></td><td>今日やるの表示／解除</td></tr>
+              <tr><td><kbd>M</kbd></td><td>マイタスクの表示／解除</td></tr>
+              <tr><td><kbd>Esc</kbd></td><td>ダイアログ・詳細パネルを閉じる</td></tr>
+              <tr><td><kbd>Ctrl</kbd> + <kbd>Enter</kbd></td><td>メモの追加／Claude で入力の実行</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>文字を入力している間とダイアログを開いている間は、<kbd>Esc</kbd> 以外は反応しません。</p>
+      </section>
+
+      <section id="faq" aria-labelledby="h-faq">
+        <h2 id="h-faq">困ったとき</h2>
+        <details>
+          <summary>別の PC やブラウザでデータが見えない</summary>
+          <div><p>ローカル版のデータは、そのブラウザの中だけに保存されます。JSON でエクスポートし、別の環境でインポートしてください。端末をまたいで使いたい場合は claude.ai 版を使います。</p></div>
+        </details>
+        <details>
+          <summary>「保存容量の上限を超えたため、保存できませんでした」と出た</summary>
+          <div><p>その変更は保存されていません。まず「JSONをエクスポート」でバックアップを取り、完了した古いタスクを削除してください。</p></div>
+        </details>
+        <details>
+          <summary>claude.ai 版の同期の表示が赤くなっている</summary>
+          <div><p>変更が claude.ai に保存できていません。表示を押すと送り直します。続く場合は、通信状態を確認するか、ページを読み込み直してください。この端末の画面上の内容は残っています。</p></div>
+        </details>
+        <details>
+          <summary>繰り返しタスクの次回分ができない</summary>
+          <div><p>次回分は、状態を「完了」にしたときに作られます。繰り返しが「なし」になっていないか、編集画面で確認してください。</p></div>
+        </details>
+        <details>
+          <summary>「Claude で入力」が表示されない</summary>
+          <div><p>claude.ai 版だけの機能です。claude.ai 版でも表示されない場合は、Claude を使う許可が出ていない可能性があります。</p></div>
+        </details>
+        <details>
+          <summary>削除したタスクを戻したい</summary>
+          <div><p>削除直後の通知の「元に戻す」で戻せます。通知が消えたあとは、以前のバックアップ（JSON）からのインポートで戻すしかありません。</p></div>
+        </details>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    <div class="wrap">Task Board 使い方マニュアル（データ形式 v3）。画面の画像はサンプルデータで作成しています。</div>
+  </footer>
+</body>
+</html>
