@@ -124,7 +124,11 @@ html.in-stride .task-row.is-today:hover { background: var(--stride-row-today-hov
 html.in-stride {
   --stride-font: system-ui, -apple-system, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", Meiryo, sans-serif;
   --stride-font-num: "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", "Roboto", system-ui, sans-serif;
+  /* 数字の書体を STRIDE と同じにする（元は Bahnschrift / DIN） */
+  --font-num: var(--stride-font-num);
 }
+/* 集計カードの大きな数字は、STRIDE のホームのカードの数字と同じ太さ・字間にする */
+html.in-stride .summary-value { font-weight: 800; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
 .s-appbar {
   position: sticky; top: 0; z-index: 80;
   padding: calc(env(safe-area-inset-top, 0px) + 10px) 16px 10px;
