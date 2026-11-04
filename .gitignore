@@ -1,0 +1,11 @@
+# 個人の記録データ（エクスポートしたバックアップ）はコミットしない
+*.json
+*.csv
+# アプリに必要な JSON は例外として含める
+!manifest.json
+
+# OS・エディタ
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
