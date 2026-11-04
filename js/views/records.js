@@ -9,7 +9,7 @@ const LIST_KEY = { weight: 'weights', strength: 'strength', jog: 'jogs' };
 const PAGE = 30;
 
 // 画面をまたいで保持する状態
-const state = { type: 'weight', editingId: null, shown: PAGE, lastExercise: null };
+const state = { type: 'weight', editingId: null, shown: PAGE, lastExercise: null, presetDate: null };
 
 export function render(root, app, params) {
   if (params.type) {
@@ -17,6 +17,8 @@ export function render(root, app, params) {
     state.editingId = null;
     state.shown = PAGE;
   }
+  // カレンダーから「この日の記録を追加」で来たときは、その日付を初期値にする
+  state.presetDate = params.date || null;
   if (params.editId) {
     state.type = params.type || state.type;
     state.editingId = params.editId;
@@ -49,7 +51,7 @@ export function render(root, app, params) {
 /* ---------- 共通 ---------- */
 
 function dateInput(value) {
-  return h('input', { type: 'date', name: 'date', required: true, value: value || todayStr(), max: todayStr() });
+  return h('input', { type: 'date', name: 'date', required: true, value: value || state.presetDate || todayStr(), max: todayStr() });
 }
 
 function numberInput(name, value, { step = '0.1', min = '0', placeholder = '', required = false, inputmode = 'decimal' } = {}) {
