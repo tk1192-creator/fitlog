@@ -4,14 +4,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="筋トレ・ジョギング・体重を記録して、推移をグラフで確認できるアプリ">
-  <meta name="theme-color" content="#f6f6f4" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#161615" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eef1f6" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0a0e15" media="(prefers-color-scheme: dark)">
   <title>fitlog 運動・体重記録</title>
   <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
   <header class="appbar">
-    <h1 id="title">ホーム</h1>
+    <div class="appbar-inner">
+      <div class="appbar-left">
+        <span class="brand" aria-hidden="true">FIT<b>LOG</b></span>
+        <h1 id="title">ホーム</h1>
+      </div>
+      <div class="clock" aria-label="現在の日時">
+        <span id="clock-date" class="clock-date"></span>
+        <time id="clock-time" class="clock-time"></time>
+      </div>
+    </div>
   </header>
 
   <main id="view" class="view" tabindex="-1"></main>

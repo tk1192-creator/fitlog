@@ -49,7 +49,7 @@ export function render(root, app, params) {
 /* ---------- 共通 ---------- */
 
 function dateInput(value) {
-  return h('input', { type: 'date', name: 'date', required: true, value: value || todayStr(), max: '2100-12-31' });
+  return h('input', { type: 'date', name: 'date', required: true, value: value || todayStr(), max: todayStr() });
 }
 
 function numberInput(name, value, { step = '0.1', min = '0', placeholder = '', required = false, inputmode = 'decimal' } = {}) {
@@ -132,6 +132,7 @@ function weightForm(app, editing) {
     const weightKg = Number(f.get('weightKg'));
     const bf = f.get('bodyFatPct') === '' ? null : Number(f.get('bodyFatPct'));
     if (!date) return toast('日付を入力してください');
+    if (date > todayStr()) return toast('未来の日付は入力できません');
     if (!(weightKg >= 20 && weightKg <= 300)) return toast('体重は 20〜300kg の範囲で入力してください');
     if (bf != null && !(bf > 0 && bf < 80)) return toast('体脂肪率は 0〜80% の範囲で入力してください');
 
@@ -195,6 +196,7 @@ function strengthForm(app, editing) {
       memo: String(f.get('memo') || '').trim(),
     };
     if (!rec.date) return toast('日付を入力してください');
+    if (rec.date > todayStr()) return toast('未来の日付は入力できません');
     if (!rec.exercise) return toast('種目を選んでください');
     if (!(rec.weightKg > 0 && rec.weightKg <= 500)) return toast('重量は 0〜500kg の範囲で入力してください');
     if (!(rec.reps >= 1 && rec.reps <= 100)) return toast('回数は 1〜100 で入力してください');
@@ -248,6 +250,7 @@ function jogForm(app, editing) {
       memo: String(f.get('memo') || '').trim(),
     };
     if (!rec.date) return toast('日付を入力してください');
+    if (rec.date > todayStr()) return toast('未来の日付は入力できません');
     if (!(rec.distanceKm > 0 && rec.distanceKm <= 300)) return toast('距離は 0〜300km の範囲で入力してください');
     if (!(s >= 0 && s < 60)) return toast('秒は 0〜59 で入力してください');
     if (!(rec.durationSec > 0)) return toast('時間を入力してください');

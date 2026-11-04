@@ -59,6 +59,26 @@ document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () 
 // OS のダーク / ライト切替時にグラフの色を描き直す
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => app.render());
 
+// 上部バーの日付・時刻（1 秒ごとに更新。日付が変わったら画面も描き直す）
+const WD = ['日', '月', '火', '水', '木', '金', '土'];
+let lastDate = null;
+function tick() {
+  const now = new Date();
+  const date = `${now.getMonth() + 1}月${now.getDate()}日(${WD[now.getDay()]})`;
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  const ss = String(now.getSeconds()).padStart(2, '0');
+  document.getElementById('clock-date').textContent = date;
+  const t = document.getElementById('clock-time');
+  t.dateTime = now.toISOString();
+  t.innerHTML = `${hh}<span class="colon">:</span>${mm}<small>${ss}</small>`;
+  // 日付が変わったら「今日」の表示を更新（入力中のフォームを消さないよう、ホームとカレンダーのみ）
+  if (lastDate && lastDate !== date && (app.current === 'home' || app.current === 'calendar')) app.render();
+  lastDate = date;
+}
+tick();
+setInterval(tick, 1000);
+
 app.navigate('home');
 
 // デバッグ用（ブラウザのコンソールから参照できるように）
