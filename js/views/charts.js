@@ -1,12 +1,12 @@
 // グラフ画面: 体重・筋トレ・ジョギングの推移
 import {
-  dailyStrengthStats, dayIndex, dayIndexToStr, filterByPeriod, fmtNum, formatPace,
-  monthlyJogStats, movingAverage, sortByDate, todayStr,
+  dailyStrengthStats, dayIndex, dayIndexToStr, energyPlan, filterByPeriod, fmtInt, fmtNum, formatPace,
+  latestWeight, monthlyJogStats, movingAverage, sortByDate, todayStr,
 } from '../calc.js';
 import { fmtDateShort, h, segmented } from '../ui.js';
 import { renderBestList } from './bests.js';
 
-const KINDS = [['weight', '体重'], ['strength', '筋トレ'], ['jog', 'ジョギング'], ['bests', '自己ベスト']];
+const KINDS = [['weight', '体重'], ['strength', '筋トレ'], ['jog', 'ジョギング'], ['daily', '食事・歩数'], ['bests', '自己ベスト']];
 const PERIODS = [['1m', '1か月'], ['3m', '3か月'], ['1y', '1年'], ['all', '全期間']];
 
 const state = { kind: 'weight', period: '3m', exercise: null };
@@ -31,6 +31,7 @@ export function render(root, app, params) {
 
   if (state.kind === 'weight') renderWeight(root, app);
   else if (state.kind === 'strength') renderStrength(root, app);
+  else if (state.kind === 'daily') renderDaily(root, app);
   else renderJog(root, app);
 }
 
@@ -284,4 +285,51 @@ function renderJog(root, app) {
     data: { labels, datasets: [{ label: '平均ペース', data: months.map((m) => m.paceSec), borderColor: t.s1, backgroundColor: t.s1, borderWidth: 2, pointRadius: 4, pointBorderColor: t.surface, pointBorderWidth: 2 }] },
     options: o2,
   });
+}
+
+/* ---------- 食事・歩数 ---------- */
+
+/** 日ごとの棒グラフ＋目安の水平線（破線） */
+function dailyBarChart(root, t, title, note, items, valueKey, unit, line, lineLabel) {
+  const data = items.filter((x) => x[valueKey] != null);
+  if (!data.length) {
+    root.append(emptyCard(title, 'この期間の記録がありません。'));
+    return;
+  }
+  const labels = data.map((x) => { const [, m, d] = x.date.split('-').map(Number); return `${m}/${d}`; });
+  const { card, canvas } = chartCard(title, note);
+  card.append(tableDetails(['日付', `${title.replace('の推移', '')}(${unit})`],
+    [...data].reverse().map((x) => [fmtDateShort(x.date), fmtInt(x[valueKey])])));
+  root.append(card);
+  const datasets = [{
+    type: 'bar', label: title.replace('の推移', ''), data: data.map((x) => x[valueKey]),
+    backgroundColor: t.s1, borderRadius: 4, borderSkipped: 'start', maxBarThickness: 28, order: 2,
+  }];
+  if (line) {
+    datasets.push({
+      type: 'line', label: lineLabel, data: data.map(() => line),
+      borderColor: t.s2, backgroundColor: t.s2, borderWidth: 2, borderDash: [6, 4], pointRadius: 0, pointHoverRadius: 0, order: 1,
+    });
+  }
+  const opts = baseOptions(t, { xIsDay: false, yTitle: unit, legend: Boolean(line) });
+  opts.interaction = { mode: 'index', intersect: false };
+  opts.scales.y.beginAtZero = true;
+  opts.scales.x.ticks.maxTicksLimit = 8;
+  opts.scales.x.ticks.autoSkip = true;
+  opts.plugins.tooltip.callbacks.label = (item) => `${item.dataset.label}: ${fmtInt(item.parsed.y)}${unit}`;
+  makeChart(canvas, { type: 'bar', data: { labels, datasets }, options: opts });
+}
+
+function renderDaily(root, app) {
+  const s = app.data.settings;
+  const items = sortByDate(filterByPeriod(app.data.daily, state.period, todayStr()));
+  const latest = latestWeight(app.data.weights);
+  const plan = latest ? energyPlan({ ...s, weightKg: latest.weightKg, today: todayStr() }) : null;
+  const kcalLine = plan ? (plan.intakeTarget ?? plan.tdee) : null;
+  const kcalLabel = plan ? (plan.intakeTarget != null ? `摂取の目安 ${fmtInt(kcalLine)}kcal` : `消費の目安 ${fmtInt(kcalLine)}kcal`) : '';
+  const t = theme();
+  dailyBarChart(root, t, '摂取カロリーの推移',
+    plan ? '破線は現在の体重から計算した 1 日の目安です。' : '設定で性別を入力すると、目安の線を表示します。',
+    items, 'intakeKcal', 'kcal', kcalLine, kcalLabel);
+  dailyBarChart(root, t, '歩数の推移', '破線は 1 日の歩数目標です。', items, 'steps', '歩', s.stepGoal, `目標 ${fmtInt(s.stepGoal)}歩`);
 }

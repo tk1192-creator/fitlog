@@ -2,7 +2,7 @@
 import { formatDuration, formatPace, paceSecPerKm, todayStr } from './calc.js';
 
 const KEY = 'fitlog.v1';
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2; // 2: 食事・歩数（daily）と性別・活動レベル・歩数目標を追加
 
 export const DEFAULT_EXERCISES = ['ベンチプレス', 'スクワット', 'デッドリフト', 'ラットプルダウン', 'ショルダープレス'];
 
@@ -15,12 +15,16 @@ export function defaultData() {
       targetWeightKg: null,
       targetDate: null,
       weeklyGoalDays: 3,
+      sex: null, // 'male' | 'female'（基礎代謝の計算に使う）
+      activityLevel: 'normal', // 'low' | 'normal' | 'high'
+      stepGoal: 8000,
       lastExportAt: null,
     },
     exercises: [...DEFAULT_EXERCISES],
     weights: [],
     strength: [],
     jogs: [],
+    daily: [], // 食事・歩数（1 日 1 件）
   };
 }
 
@@ -82,6 +86,9 @@ export function normalize(obj) {
     targetWeightKg: num(s.targetWeightKg) > 0 ? num(s.targetWeightKg) : null,
     targetDate: DATE_RE.test(str(s.targetDate)) ? s.targetDate : null,
     weeklyGoalDays: Math.min(7, Math.max(1, Math.round(num(s.weeklyGoalDays) || 3))),
+    sex: s.sex === 'male' || s.sex === 'female' ? s.sex : null,
+    activityLevel: ['low', 'normal', 'high'].includes(s.activityLevel) ? s.activityLevel : 'normal',
+    stepGoal: num(s.stepGoal) > 0 ? Math.round(num(s.stepGoal)) : base.settings.stepGoal,
     lastExportAt: s.lastExportAt || null,
   };
 
@@ -116,7 +123,21 @@ export function normalize(obj) {
     jogs.push({ id: str(j.id) || newId(), date: j.date, distanceKm: num(j.distanceKm), durationSec: Math.round(num(j.durationSec)), memo: str(j.memo) });
   }
 
-  return { schemaVersion: SCHEMA_VERSION, settings, exercises, weights, strength, jogs };
+  // 食事・歩数（schemaVersion 1 のデータには無いので空として扱う）
+  const daily = [];
+  const seenDaily = new Set();
+  for (const r of Array.isArray(obj.daily) ? obj.daily : []) {
+    if (!r || !DATE_RE.test(str(r.date)) || seenDaily.has(r.date)) continue;
+    const kcal = num(r.intakeKcal);
+    const steps = num(r.steps);
+    const k = kcal > 0 ? Math.round(kcal) : null;
+    const st = steps >= 0 && steps != null ? Math.round(steps) : null;
+    if (k == null && st == null) continue;
+    seenDaily.add(r.date);
+    daily.push({ id: str(r.id) || newId(), date: r.date, intakeKcal: k, steps: st, memo: str(r.memo) });
+  }
+
+  return { schemaVersion: SCHEMA_VERSION, settings, exercises, weights, strength, jogs, daily };
 }
 
 /** ファイルとしてダウンロードさせる */
@@ -144,13 +165,14 @@ function csvCell(v) {
 
 /** 全記録を 1 つの CSV にまとめる（Excel で開けるよう BOM 付き UTF-8） */
 export function buildCSV(data) {
-  const header = ['種別', '日付', '体重(kg)', '体脂肪率(%)', '種目', '重量(kg)', '回数', 'セット数', '距離(km)', '時間', 'ペース(分/km)', 'メモ'];
+  const header = ['種別', '日付', '体重(kg)', '体脂肪率(%)', '種目', '重量(kg)', '回数', 'セット数', '距離(km)', '時間', 'ペース(分/km)', '摂取(kcal)', '歩数', 'メモ'];
   const rows = [];
-  for (const w of data.weights) rows.push(['体重', w.date, w.weightKg, w.bodyFatPct ?? '', '', '', '', '', '', '', '', w.memo]);
-  for (const r of data.strength) rows.push(['筋トレ', r.date, '', '', r.exercise, r.weightKg, r.reps, r.sets, '', '', '', r.memo]);
+  for (const w of data.weights) rows.push(['体重', w.date, w.weightKg, w.bodyFatPct ?? '', '', '', '', '', '', '', '', '', '', w.memo]);
+  for (const r of data.strength) rows.push(['筋トレ', r.date, '', '', r.exercise, r.weightKg, r.reps, r.sets, '', '', '', '', '', r.memo]);
   for (const j of data.jogs) {
-    rows.push(['ジョギング', j.date, '', '', '', '', '', '', j.distanceKm, formatDuration(j.durationSec), formatPace(paceSecPerKm(j.durationSec, j.distanceKm)), j.memo]);
+    rows.push(['ジョギング', j.date, '', '', '', '', '', '', j.distanceKm, formatDuration(j.durationSec), formatPace(paceSecPerKm(j.durationSec, j.distanceKm)), '', '', j.memo]);
   }
+  for (const d of data.daily || []) rows.push(['食事・歩数', d.date, '', '', '', '', '', '', '', '', '', d.intakeKcal ?? '', d.steps ?? '', d.memo]);
   rows.sort((a, b) => (a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0));
   return '﻿' + [header, ...rows].map((r) => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
 }

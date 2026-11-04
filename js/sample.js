@@ -51,6 +51,14 @@ export function generateSample(today, days = 90) {
       data.weights.push({ id: newId(), date, weightKg, bodyFatPct, memo: '' });
     }
 
+    // 食事・歩数: 摂取 1,750〜2,300kcal、歩数 4,000〜12,000 歩（運動した日は多め）
+    if (rand() < 0.8) {
+      const active = dow === 1 || dow === 3 || dow === 5 || dow === 6;
+      const intakeKcal = Math.round((1750 + rand() * 550) / 10) * 10;
+      const steps = Math.round((active ? 8000 + rand() * 4000 : 4000 + rand() * 5000) / 10) * 10;
+      data.daily.push({ id: newId(), date, intakeKcal, steps, memo: '' });
+    }
+
     const skip = rand() < 0.12;
     if (!skip && (dow === 1 || dow === 5)) {
       for (const ex of dow === 1 ? upper : lower) {

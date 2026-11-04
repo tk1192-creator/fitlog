@@ -1,5 +1,5 @@
 // 設定画面: プロフィール・目標、種目、データの入出力、危険な操作
-import { daysBetween, todayStr } from '../calc.js';
+import { ACTIVITY_LEVELS, daysBetween, todayStr } from '../calc.js';
 import { defaultData, exportCSV, exportJSON, normalize } from '../storage.js';
 import { generateSample } from '../sample.js';
 import { confirmDialog, field, fmtDateLong, h, toast } from '../ui.js';
@@ -24,11 +24,28 @@ function profileCard(app) {
       field('目標体重 (kg)', n('targetWeightKg', s.targetWeightKg, { step: '0.1', min: '20', max: '300', placeholder: '未設定' })),
       field('目標達成日', h('input', { type: 'date', name: 'targetDate', value: s.targetDate || '' }), '任意'),
     ),
-    field('週の運動目標日数',
-      h('select', { name: 'weeklyGoalDays' },
-        [1, 2, 3, 4, 5, 6, 7].map((d) => h('option', { value: String(d), text: `週 ${d} 日`, selected: d === s.weeklyGoalDays })),
+    h('div', { class: 'row-2' },
+      field('週の運動目標日数',
+        h('select', { name: 'weeklyGoalDays' },
+          [1, 2, 3, 4, 5, 6, 7].map((d) => h('option', { value: String(d), text: `週 ${d} 日`, selected: d === s.weeklyGoalDays })),
+        ),
+      ),
+      field('1 日の歩数目標', n('stepGoal', s.stepGoal, { step: '500', min: '1000', max: '50000', inputmode: 'numeric' })),
+    ),
+    h('p', { class: 'card-note', text: '以下は基礎代謝とカロリーの目安の計算に使います。' }),
+    h('div', { class: 'row-2' },
+      field('性別',
+        h('select', { name: 'sex' },
+          [['', '未設定'], ['male', '男性'], ['female', '女性']].map(([v, l]) => h('option', { value: v, text: l, selected: (s.sex || '') === v })),
+        ),
+      ),
+      field('活動レベル',
+        h('select', { name: 'activityLevel' },
+          ACTIVITY_LEVELS.map(([v, l]) => h('option', { value: v, text: l.replace(/（.*）/, ''), selected: s.activityLevel === v })),
+        ),
       ),
     ),
+    h('ul', { class: 'level-help' }, ACTIVITY_LEVELS.map(([, l]) => h('li', { text: l }))),
     h('div', { class: 'form-actions' }, h('button', { type: 'submit', class: 'btn btn-primary btn-lg', text: '設定を保存' })),
   );
   form.addEventListener('submit', (e) => {
@@ -42,8 +59,13 @@ function profileCard(app) {
     if (!(age >= 1 && age <= 120)) return toast('年齢は 1〜120 で入力してください');
     if (tw != null && !(tw >= 20 && tw <= 300)) return toast('目標体重は 20〜300kg で入力してください');
     if (td && td <= todayStr()) return toast('目標達成日は明日以降の日付を入力してください');
+    const stepGoal = Math.round(Number(f.get('stepGoal')));
+    if (!(stepGoal >= 1000 && stepGoal <= 50000)) return toast('歩数目標は 1,000〜50,000 歩で入力してください');
     app.update((d) => {
-      Object.assign(d.settings, { heightCm, age, targetWeightKg: tw, targetDate: td, weeklyGoalDays: Number(f.get('weeklyGoalDays')) });
+      Object.assign(d.settings, {
+        heightCm, age, targetWeightKg: tw, targetDate: td, weeklyGoalDays: Number(f.get('weeklyGoalDays')),
+        stepGoal, sex: f.get('sex') || null, activityLevel: f.get('activityLevel') || 'normal',
+      });
     });
     toast('設定を保存しました');
   });

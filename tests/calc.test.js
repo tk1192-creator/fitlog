@@ -80,5 +80,38 @@ test('CSV: BOM 付き・カンマを含むメモをエスケープ', () => {
   d.weights.push({ id: '1', date: '2026-11-01', weightKg: 70, bodyFatPct: null, memo: 'a,"b"' });
   const csv = buildCSV(d);
   eq(csv.charCodeAt(0), 0xfeff);
-  eq(csv.split('\r\n')[1], '体重,2026-11-01,70,,,,,,,,,"a,""b"""');
+  eq(csv.split('\r\n')[1], '体重,2026-11-01,70,,,,,,,,,,,"a,""b"""');
+});
+
+test('基礎代謝: 男性 70kg・165cm・52歳 ≒ 1,454kcal', () => eq(c.bmrGanpule(70, 165, 52, 'male'), 1454));
+test('基礎代謝: 女性は定数項の分だけ低い', () => eq(c.bmrGanpule(70, 165, 52, 'female'), 1323));
+test('基礎代謝: 性別未設定は null', () => eq(c.bmrGanpule(70, 165, 52, null), null));
+test('活動レベル: 年齢区分ごとの係数', () => {
+  eq([c.activityFactor('low', 52), c.activityFactor('normal', 52), c.activityFactor('high', 52)], [1.5, 1.75, 2.0]);
+  eq([c.activityFactor('normal', 70), c.activityFactor('high', 70)], [1.7, 1.9]);
+  eq(c.activityFactor('high', 80), 1.7);
+});
+test('カロリー目安: 70→66kg を 60 日で、1 日 480kcal 減らす', () => {
+  const p = c.energyPlan({ weightKg: 70, heightCm: 165, age: 52, sex: 'male', activityLevel: 'normal', targetWeightKg: 66, targetDate: '2027-01-03', today: '2026-11-04' });
+  eq([p.bmr, p.tdee, p.changePerDay, p.intakeTarget, p.belowBmr], [1454, 2545, 480, 2065, false]);
+});
+test('カロリー目安: 急すぎる目標は基礎代謝割れを警告', () => {
+  const p = c.energyPlan({ weightKg: 70, heightCm: 165, age: 52, sex: 'male', activityLevel: 'low', targetWeightKg: 60, targetDate: '2026-12-04', today: '2026-11-04' });
+  eq(p.belowBmr, true);
+});
+test('カロリー目安: 目標日がなければ摂取目安は出さない', () => {
+  const p = c.energyPlan({ weightKg: 70, heightCm: 165, age: 52, sex: 'male', activityLevel: 'normal', targetWeightKg: 66, targetDate: null, today: '2026-11-04' });
+  eq([p.intakeTarget, p.changePerDay], [null, null]);
+});
+test('3 桁区切り', () => eq(c.fmtInt(12345), '12,345'));
+test('旧データ（v1）を読み込むと食事・歩数は空で、設定は既定値', () => {
+  const d = normalize({ schemaVersion: 1, settings: { heightCm: 170 }, weights: [], strength: [], jogs: [] });
+  eq([d.schemaVersion, d.daily.length, d.settings.sex, d.settings.activityLevel, d.settings.stepGoal, d.settings.heightCm], [2, 0, null, 'normal', 8000, 170]);
+});
+test('食事・歩数: 1 日 1 件、どちらも空の記録は捨てる', () => {
+  const d = normalize({ weights: [], strength: [], jogs: [], daily: [
+    { date: '2026-11-01', intakeKcal: 1800, steps: 8000 }, { date: '2026-11-01', intakeKcal: 2000 },
+    { date: '2026-11-02', steps: 0 }, { date: '2026-11-03' },
+  ] });
+  eq(d.daily.map((x) => [x.date, x.intakeKcal, x.steps]), [['2026-11-01', 1800, 8000], ['2026-11-02', null, 0]]);
 });

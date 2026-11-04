@@ -257,3 +257,63 @@ export function dailyStrengthStats(strength, exercise) {
   }
   return sortByDate([...map.values()]);
 }
+
+/* ---------- 基礎代謝・カロリー（v1.1.0） ---------- */
+
+/** 脂肪 1kg あたりのエネルギー（一般的な目安） */
+export const KCAL_PER_KG_FAT = 7200;
+
+/**
+ * 基礎代謝（kcal/日）。国立健康・栄養研究所の式（Ganpule ら, 2007）。
+ *   男性: (0.0481×体重 + 0.0234×身長 − 0.0138×年齢 − 0.4235) × 1000 / 4.186
+ *   女性: (0.0481×体重 + 0.0234×身長 − 0.0138×年齢 − 0.9708) × 1000 / 4.186
+ * ※ 係数は一般に引用されている値。原典での確認は未了（要確認）。
+ */
+export function bmrGanpule(weightKg, heightCm, age, sex) {
+  if (!(weightKg > 0) || !(heightCm > 0) || !(age > 0) || (sex !== 'male' && sex !== 'female')) return null;
+  const c = sex === 'male' ? 0.4235 : 0.9708;
+  const mj = 0.0481 * weightKg + 0.0234 * heightCm - 0.0138 * age - c;
+  return Math.round((mj * 1000) / 4.186);
+}
+
+/**
+ * 身体活動レベルの係数。日本人の食事摂取基準（2025年版）の年齢区分別の値。
+ * 18 歳未満は 18〜64 歳の値を使う（このアプリは成人向け）。75 歳以上の「高い」は表に値がないため「ふつう」と同じ。
+ */
+export const ACTIVITY_LEVELS = [['low', '低い（座っていることが多い）'], ['normal', 'ふつう（通勤・家事・軽い運動）'], ['high', '高い（立ち仕事・運動習慣あり）']];
+
+export function activityFactor(level, age) {
+  let table = { low: 1.5, normal: 1.75, high: 2.0 };
+  if (age >= 75) table = { low: 1.4, normal: 1.7, high: 1.7 };
+  else if (age >= 65) table = { low: 1.5, normal: 1.7, high: 1.9 };
+  return table[level] || table.normal;
+}
+
+/**
+ * 1 日のエネルギーの目安。
+ * @returns {null | {bmr, tdee, factor, changePerDay, intakeTarget, belowBmr}}
+ *   changePerDay: 目標達成のために 1 日あたり減らす（正）／増やす（負）kcal。目標日がなければ null
+ *   intakeTarget: 1 日の摂取目安。目標日がなければ null
+ */
+export function energyPlan({ weightKg, heightCm, age, sex, activityLevel, targetWeightKg, targetDate, today }) {
+  const bmr = bmrGanpule(weightKg, heightCm, age, sex);
+  if (bmr == null) return null;
+  const factor = activityFactor(activityLevel, age);
+  const tdee = Math.round(bmr * factor);
+  let changePerDay = null;
+  let intakeTarget = null;
+  if (targetWeightKg > 0 && targetDate) {
+    const days = daysBetween(today, targetDate);
+    if (days > 0) {
+      changePerDay = Math.round(((weightKg - targetWeightKg) * KCAL_PER_KG_FAT) / days);
+      intakeTarget = tdee - changePerDay;
+    }
+  }
+  return { bmr, tdee, factor, changePerDay, intakeTarget, belowBmr: intakeTarget != null && intakeTarget < bmr };
+}
+
+/** 3 桁区切り: 12345 → "12,345" */
+export function fmtInt(v) {
+  if (v == null || !isFinite(v)) return '-';
+  return Math.round(v).toLocaleString('ja-JP');
+}

@@ -1,11 +1,11 @@
 // 記録画面: 体重・筋トレ・ジョギングの入力、一覧、編集、削除
-import { bmi, epley1RM, fmtNum, formatDuration, formatPace, paceSecPerKm, sortByDate, todayStr } from '../calc.js';
+import { bmi, energyPlan, epley1RM, fmtInt, fmtNum, formatDuration, formatPace, latestWeight, paceSecPerKm, sortByDate, todayStr } from '../calc.js';
 import { newId } from '../storage.js';
 import { confirmDialog, field, fmtDateShort, h, segmented, toast } from '../ui.js';
 import { afterSave } from '../hooks.js';
 
-const TYPES = [['weight', '体重'], ['strength', '筋トレ'], ['jog', 'ジョギング']];
-const LIST_KEY = { weight: 'weights', strength: 'strength', jog: 'jogs' };
+const TYPES = [['weight', '体重'], ['strength', '筋トレ'], ['jog', 'ジョギング'], ['daily', '食事・歩数']];
+const LIST_KEY = { weight: 'weights', strength: 'strength', jog: 'jogs', daily: 'daily' };
 const PAGE = 30;
 
 // 画面をまたいで保持する状態
@@ -39,7 +39,8 @@ export function render(root, app, params) {
 
   const form = state.type === 'weight' ? weightForm(app, editing)
     : state.type === 'strength' ? strengthForm(app, editing)
-      : jogForm(app, editing);
+      : state.type === 'jog' ? jogForm(app, editing)
+        : dailyForm(app, editing);
   root.append(h('section', { class: 'card' + (editing ? ' editing' : '') },
     h('h2', { class: 'card-title', text: editing ? `記録を編集（${fmtDateShort(editing.date)}）` : '新しい記録' }),
     form,
@@ -261,6 +262,68 @@ function jogForm(app, editing) {
   return form;
 }
 
+/* ---------- 食事・歩数 ---------- */
+
+function dailyForm(app, editing) {
+  const s = app.data.settings;
+  const latest = latestWeight(app.data.weights);
+  const plan = latest ? energyPlan({ ...s, weightKg: latest.weightKg, today: todayStr() }) : null;
+  const kcal = numberInput('intakeKcal', editing?.intakeKcal, { step: '1', min: '0', placeholder: '例: 1800', inputmode: 'numeric' });
+  const steps = numberInput('steps', editing?.steps, { step: '1', min: '0', placeholder: '例: 8000', inputmode: 'numeric' });
+  const out = h('output', { class: 'live' });
+  const update = () => {
+    const parts = [];
+    const target = plan?.intakeTarget ?? plan?.tdee;
+    if (target) {
+      const k = Number(kcal.value);
+      parts.push(k > 0 ? `摂取 ${fmtInt(k)} / 目安 ${fmtInt(target)}kcal（${k <= target ? `あと ${fmtInt(target - k)}` : `${fmtInt(k - target)} 超過`}）` : `摂取の目安 ${fmtInt(target)}kcal`);
+    } else {
+      parts.push('設定で性別を入れると、摂取の目安を表示します');
+    }
+    const st = Number(steps.value);
+    if (st > 0) parts.push(`歩数 目標 ${fmtInt(s.stepGoal)} 歩の ${Math.round((st / s.stepGoal) * 100)}%`);
+    out.textContent = parts.join('　');
+  };
+  kcal.addEventListener('input', update);
+  steps.addEventListener('input', update);
+  update();
+
+  const form = h('form', { class: 'form', novalidate: true },
+    field('日付', dateInput(editing?.date)),
+    h('div', { class: 'row-2' },
+      field('摂取カロリー (kcal)', kcal, '1 日の合計'),
+      field('歩数', steps),
+    ),
+    out,
+    field('メモ', memoInput(editing?.memo)),
+    formActions(app, editing, 'daily'),
+  );
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = new FormData(form);
+    const date = f.get('date');
+    const k = f.get('intakeKcal') === '' ? null : Math.round(Number(f.get('intakeKcal')));
+    const st = f.get('steps') === '' ? null : Math.round(Number(f.get('steps')));
+    if (!date) return toast('日付を入力してください');
+    if (date > todayStr()) return toast('未来の日付は入力できません');
+    if (k == null && st == null) return toast('摂取カロリーか歩数のどちらかを入力してください');
+    if (k != null && !(k > 0 && k <= 10000)) return toast('摂取カロリーは 1〜10,000kcal で入力してください');
+    if (st != null && !(st >= 0 && st <= 100000)) return toast('歩数は 0〜100,000 歩で入力してください');
+
+    const dup = app.data.daily.find((x) => x.date === date && x.id !== editing?.id);
+    if (dup) {
+      const ok = await confirmDialog(`${fmtDateShort(date)} の食事・歩数はすでに記録されています。
+上書きしますか？`, { okText: '上書きする' });
+      if (!ok) return;
+      app.data.daily = app.data.daily.filter((x) => x.id !== dup.id);
+    }
+    const rec = { id: editing?.id || newId(), date, intakeKcal: k, steps: st, memo: String(f.get('memo') || '').trim() };
+    commit(app, 'daily', rec, editing);
+  });
+  return form;
+}
+
 /* ---------- 一覧 ---------- */
 
 function listSection(app, list) {
@@ -313,6 +376,12 @@ function describe(app, rec) {
     return [
       h('strong', { text: rec.exercise }),
       h('span', { class: 'record-sub', text: `${fmtNum(rec.weightKg)}kg × ${rec.reps}回 × ${rec.sets}セット　1RM ${fmtNum(epley1RM(rec.weightKg, rec.reps))}kg` }),
+      memo,
+    ];
+  }
+  if (state.type === 'daily') {
+    return [
+      h('strong', { text: [rec.intakeKcal != null ? `${fmtInt(rec.intakeKcal)}kcal` : null, rec.steps != null ? `${fmtInt(rec.steps)}歩` : null].filter(Boolean).join('　') }),
       memo,
     ];
   }

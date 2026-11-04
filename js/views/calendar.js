@@ -1,6 +1,6 @@
 // 運動カレンダー: 月表示・週ごとの運動日数・ストリーク・日付ごとの記録
 import {
-  addDays, epley1RM, exerciseDays, fmtNum, formatDuration, formatPace, paceSecPerKm,
+  addDays, epley1RM, exerciseDays, fmtInt, fmtNum, formatDuration, formatPace, paceSecPerKm,
   streakWeeks, todayStr, weekStart, weeklyCounts,
 } from '../calc.js';
 import { fmtDateLong, h } from '../ui.js';
@@ -126,11 +126,13 @@ function dayDetail(app, date, today) {
   const weights = app.data.weights.filter((x) => x.date === date);
   const strength = app.data.strength.filter((x) => x.date === date);
   const jogs = app.data.jogs.filter((x) => x.date === date);
+  const daily = app.data.daily.filter((x) => x.date === date);
   const edit = (type, id) => app.navigate('records', { type, editId: id });
 
   const items = [
     ...weights.map((w) => item('weight', '体重', `${fmtNum(w.weightKg)}kg${w.bodyFatPct != null ? `　体脂肪 ${fmtNum(w.bodyFatPct)}%` : ''}`, w.memo, () => edit('weight', w.id))),
     ...strength.map((r) => item('strength', r.exercise, `${fmtNum(r.weightKg)}kg × ${r.reps}回 × ${r.sets}セット　1RM ${fmtNum(epley1RM(r.weightKg, r.reps))}kg`, r.memo, () => edit('strength', r.id))),
+    ...daily.map((d) => item('daily', '食事・歩数', [d.intakeKcal != null ? `${fmtInt(d.intakeKcal)}kcal` : null, d.steps != null ? `${fmtInt(d.steps)}歩` : null].filter(Boolean).join('　'), d.memo, () => edit('daily', d.id))),
     ...jogs.map((j) => item('jog', 'ジョギング', `${fmtNum(j.distanceKm, 2)}km　${formatDuration(j.durationSec)}　${formatPace(paceSecPerKm(j.durationSec, j.distanceKm))}/km`, j.memo, () => edit('jog', j.id))),
   ];
 
@@ -143,7 +145,7 @@ function dayDetail(app, date, today) {
   if (date <= today) {
     card.append(h('div', { class: 'day-add' },
       h('span', { class: 'card-note', text: 'この日の記録を追加:' }),
-      ...[['weight', '体重'], ['strength', '筋トレ'], ['jog', 'ジョギング']].map(([type, label]) =>
+      ...[['weight', '体重'], ['strength', '筋トレ'], ['jog', 'ジョギング'], ['daily', '食事・歩数']].map(([type, label]) =>
         h('button', { type: 'button', class: 'btn btn-sm', text: `＋${label}`, onclick: () => app.navigate('records', { type, date }) })),
     ));
   }
