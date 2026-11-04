@@ -2,11 +2,50 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>fitlog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="筋トレ・ジョギング・体重を記録して、推移をグラフで確認できるアプリ">
+  <meta name="theme-color" content="#f6f6f4" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#161615" media="(prefers-color-scheme: dark)">
+  <title>fitlog 運動・体重記録</title>
+  <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
-  <h1>fitlog</h1>
-  <p>運動・体重記録アプリ（準備中）</p>
+  <header class="appbar">
+    <h1 id="title">ホーム</h1>
+  </header>
+
+  <main id="view" class="view" tabindex="-1"></main>
+
+  <nav class="tabbar" aria-label="画面切替">
+    <button type="button" class="tab active" data-tab="home" aria-current="page">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+      <span>ホーム</span>
+    </button>
+    <button type="button" class="tab" data-tab="records">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      <span>記録</span>
+    </button>
+    <button type="button" class="tab" data-tab="charts">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16M6 15l4-5 4 3 5-7"/></svg>
+      <span>グラフ</span>
+    </button>
+    <button type="button" class="tab" data-tab="calendar">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+      <span>カレンダー</span>
+    </button>
+    <button type="button" class="tab" data-tab="settings">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>
+      <span>設定</span>
+    </button>
+  </nav>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <dialog id="dialog" class="dialog"></dialog>
+
+  <noscript><p class="noscript">このアプリを使うには JavaScript を有効にしてください。</p></noscript>
+
+  <script src="./lib/chart.umd.min.js"></script>
+  <script src="./lib/confetti.browser.js"></script>
+  <script type="module" src="./js/app.js"></script>
 </body>
 </html>
