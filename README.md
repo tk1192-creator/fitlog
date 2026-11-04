@@ -46,7 +46,7 @@ STRIDE のホームには、期限切れ・今日が期限・作業中の件数�
 ### Task Board の修正と claude.ai 版
 
 - 今後の Task Board の修正は、このリポジトリの `tasks/` を正とします（元のフォルダ `AI_自己管理ツール` は 2026-11-04 時点のまま残しています）。
-- `tasks/app.js`・`tasks/style.css` は元の Task Board と同じ内容です。STRIDE との連携（戻るボタン・保存場所の表示・オフライン対応）は `tasks/stride-bridge.js`・`tasks/stride-bridge.css` に分けており、claude.ai で開いたときは動きません。
+- `tasks/app.js`・`tasks/style.css` は元の Task Board と同じ内容です。STRIDE との連携（見た目の統一・ダークモード・共通の下部タブ・保存場所の表示・オフライン対応）は `tasks/stride-bridge.js`・`tasks/stride-bridge.css` に分けており、claude.ai で開いたときは動きません。
 - claude.ai 版を作り直すときは、Claude Code に「Task Board の claude.ai 版を、STRIDE の tasks/ で更新して」と依頼してください（claude.ai 版のリンクは公開リポジトリには載せず、Claude Code のメモリに記録しています）。
 
 ## 使い方

@@ -184,3 +184,16 @@ localStorage キー `fitlog.v1` に以下の JSON を 1 つ保存する。
 ### 公開前の確認
 - `tasks/` のコード・マニュアルのスクリーンショット 10 枚に、実在のお客様名・IP アドレス・URL が含まれないことを確認済み（サンプルデータのみ）。
 - 元の README は claude.ai 版のリンクを含むため取り込まない。
+
+## 13. Task Board の見た目を STRIDE に統一（v1.4.0）
+
+| 項目 | 内容 |
+|---|---|
+| 方式 | `tasks/stride-bridge.css` で Task Board の CSS 変数を STRIDE の値に差し替える。Task Board 本体（style.css・app.js）は変更しない |
+| 配色 | STRIDE と同じ（背景 #eef1f6、青 #2a78d6）。ダークモードは端末の設定に合わせて切り替え |
+| ヘッダー | STRIDE のヒーローカードと同じグラデーション＋斜線。見出しは「STRIDE›」＋「タスク」。ヘッダー上の「タスクを追加」は視認性のため白いボタンのまま |
+| 角丸・ボタン | 角丸 8/14/18px、主ボタンは STRIDE と同じグラデーション |
+| 下部タブ | STRIDE と共通の 6 タブを表示（「‹ STRIDE」ボタンは廃止）。STRIDE 側の画面へは `../#records` などで移動し、STRIDE の app.js が # を読んで画面を開く |
+| ダークモードの補正 | 濃紺（--color-ink）を文字色に使う箇所（サマリーの数値・実績時間・ガントの期間）と、直接指定の色を上書き |
+| 確認 | ダーク時の主要な文字のコントラスト比 6.8〜17.2（4.5 以上） |
+| ちらつき防止 | tasks/index.html の `<html>` に最初から `in-stride` を付ける（claude.ai で開いたときは stride-bridge.js が外す） |

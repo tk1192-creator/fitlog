@@ -81,7 +81,10 @@ function tick() {
 tick();
 setInterval(tick, 1000);
 
-app.navigate('home');
+// タスク画面の下部タブから ./#records などで来たときは、その画面を開く（URL の # は消す）
+const initialTab = location.hash.slice(1);
+if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+app.navigate(VIEWS[initialTab] ? initialTab : 'home');
 registerSW();
 
 // デバッグ用（ブラウザのコンソールから参照できるように）

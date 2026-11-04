@@ -1,13 +1,204 @@
-/* STRIDE との連携部分（stride-bridge.js が追加する要素）のスタイル */
-.stride-back {
-  display: inline-flex; align-items: center; gap: 4px;
-  flex: none;
-  margin-right: 12px; padding: 6px 12px;
-  border-radius: 999px; border: 1px solid rgb(255 255 255 / 0.35);
-  background: rgb(255 255 255 / 0.12); color: #fff;
-  font-weight: 800; font-size: 14px; letter-spacing: 0.06em; text-decoration: none;
+/* ==========================================================
+   STRIDE との連携（html に .in-stride が付いているときだけ効く）
+   - Task Board の CSS 変数を STRIDE の配色・角丸・影に差し替える（ライト / ダーク）
+   - ヘッダー・ボタンの見た目、下部タブ、保存場所の表示
+   Task Board 本体の style.css は変更しない。claude.ai 版では読み込まない。
+   ========================================================== */
+
+/* ---------- 配色（ライト） ---------- */
+html.in-stride {
+  color-scheme: light;
+  --color-bg: #eef1f6;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f2f4f8;
+  --color-border: #dde2ea;
+  --color-border-strong: #c9d0db;
+  --color-text: #0e1320;
+  --color-text-muted: #4a5263;
+  --color-text-subtle: #6b7385;
+
+  --color-ink: #0c2040;
+  --color-ink-line: rgba(255, 255, 255, 0.16);
+  --color-ink-text: #ffffff;
+  --color-ink-muted: rgba(255, 255, 255, 0.78);
+
+  --color-primary: #2a78d6;
+  --color-primary-hover: #1c5cab;
+  --color-primary-soft: #e1ecfb;
+  --color-primary-ring: rgba(42, 120, 214, 0.3);
+
+  --color-danger: #c93a39;
+  --color-danger-hover: #a82c2b;
+  --color-danger-soft: #fbe9e9;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --shadow-sm: 0 1px 2px rgba(14, 19, 32, 0.05);
+  --shadow-md: 0 1px 2px rgba(14, 19, 32, 0.05), 0 6px 20px rgba(14, 19, 32, 0.06);
+  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.3);
+
+  /* このファイル内だけで使う値（STRIDE の css/style.css と同じ値） */
+  --stride-hero: linear-gradient(135deg, #0c2040 0%, #164a8c 55%, #2a78d6 100%);
+  --stride-btn: linear-gradient(135deg, #2a78d6 0%, #1c5cab 100%);
+  --stride-row-hover: #f2f4f8;
+  --stride-row-overdue-hover: #fbe9e9;
+  --stride-row-today-hover: #fdf1e3;
+  --stride-tab-h: 66px;
 }
-.stride-back:hover { background: rgb(255 255 255 / 0.2); }
-.stride-local-note { margin: 8px auto 0; font-size: 12px; color: var(--color-text-muted, #5b6474); }
-/* iPhone のホーム画面アプリで、上端（時計・電池の表示）と重ならないようにする */
-.in-stride .app-header { padding-top: env(safe-area-inset-top, 0px); }
+
+/* ---------- 配色（ダーク）：端末の設定に合わせる ---------- */
+@media (prefers-color-scheme: dark) {
+  html.in-stride {
+    color-scheme: dark;
+    --color-bg: #0a0e15;
+    --color-surface: #131a25;
+    --color-surface-muted: #1b2331;
+    --color-border: #253043;
+    --color-border-strong: #34405a;
+    --color-text: #eef2f8;
+    --color-text-muted: #b4bdcc;
+    --color-text-subtle: #8a94a6;
+
+    --color-ink: #0b1830;
+
+    --color-primary: #3987e5;
+    --color-primary-hover: #5598e7;
+    --color-primary-soft: #17304f;
+    --color-primary-ring: rgba(57, 135, 229, 0.35);
+
+    --color-danger: #e66767;
+    --color-danger-hover: #f08080;
+    --color-danger-soft: #361b1f;
+    --color-danger-tint: #24161a;
+    --color-danger-border: #6b2c2c;
+    --color-warning: #e8a33d;
+    --color-warning-text: #f2c27a;
+    --color-warning-soft: #362c16;
+    --color-warning-tint: #221d12;
+    --color-warning-border: #6b5320;
+    --color-success: #3fbf7f;
+    --color-success-soft: #15332a;
+
+    --status-todo-bg: #232d3d;
+    --status-todo-fg: #c3cbd8;
+    --status-doing-bg: #17304f;
+    --status-doing-fg: #8bb8f0;
+    --status-review-bg: #2b2350;
+    --status-review-fg: #c4b2f5;
+    --status-done-bg: #15332a;
+    --status-done-fg: #8fd9b3;
+
+    --priority-high-bg: #3a1f22;
+    --priority-high-fg: #f19a95;
+    --priority-medium-bg: #36290f;
+    --priority-medium-fg: #f0c070;
+    --priority-low-bg: #232d3d;
+    --priority-low-fg: #b4bdcc;
+
+    --shadow-sm: 0 0 0 1px rgba(255, 255, 255, 0.02);
+    --shadow-md: 0 0 0 1px rgba(255, 255, 255, 0.02);
+
+    --stride-hero: linear-gradient(135deg, #0b1830 0%, #133d75 55%, #2a6fc4 100%);
+    --stride-btn: linear-gradient(135deg, #3987e5 0%, #256abf 100%);
+    --stride-row-hover: #1b2331;
+    --stride-row-overdue-hover: #2a1a1e;
+    --stride-row-today-hover: #2a2215;
+  }
+  /* 濃紺（--color-ink）を文字色に使っている箇所は、ダークでは通常の文字色にする */
+  html.in-stride .summary-value,
+  html.in-stride .time-actual,
+  html.in-stride .view-range { color: var(--color-text); }
+  html.in-stride .gantt-bar:focus-visible { outline-color: var(--color-text); }
+  /* style.css で色を直接指定している箇所 */
+  html.in-stride .alert { color: #f5b4ad; }
+  html.in-stride .btn:hover,
+  html.in-stride .textarea:hover,
+  html.in-stride .segment:hover span { border-color: #46546d; }
+}
+
+/* style.css で色を直接指定している行の hover 色 */
+html.in-stride .task-row:hover { background: var(--stride-row-hover); }
+html.in-stride .task-row.is-overdue:hover { background: var(--stride-row-overdue-hover); }
+html.in-stride .task-row.is-today:hover { background: var(--stride-row-today-hover); }
+
+/* ---------- ヘッダー（STRIDE のホームのカードと同じグラデーション） ---------- */
+html.in-stride .app-header {
+  position: relative;
+  overflow: hidden;
+  background: var(--stride-hero);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+html.in-stride .app-header::after {
+  /* 斜めのライン装飾 */
+  content: ""; position: absolute; right: -60px; top: -90px; width: 320px; height: 320px;
+  background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0 2px, transparent 2px 14px);
+  border-radius: 50%; pointer-events: none;
+}
+html.in-stride .header-inner { position: relative; z-index: 1; }
+/* ヘッダーを position: relative にしたため、重ねて表示するサマリーを手前に出す */
+html.in-stride .summary { position: relative; z-index: 2; }
+html.in-stride .brand-mark,
+html.in-stride .brand-desc { display: none; }
+html.in-stride .brand-title { font-size: 26px; font-weight: 800; letter-spacing: 0.02em; }
+.stride-eyebrow {
+  display: block; margin: 0 0 2px;
+  font-family: "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  font-size: 11px; font-weight: 800; font-style: italic; letter-spacing: 0.22em;
+  color: rgba(255, 255, 255, 0.75);
+}
+.stride-eyebrow b { color: #8fc0ff; font-style: normal; margin-left: 2px; }
+
+/* ---------- ボタン・カード ---------- */
+html.in-stride .btn { border-radius: 14px; font-weight: 700; }
+html.in-stride .btn-primary {
+  background: var(--stride-btn);
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(42, 120, 214, 0.3);
+}
+html.in-stride .btn-primary:hover { background: var(--stride-btn); filter: brightness(1.06); border-color: transparent; }
+html.in-stride .btn-primary { color: #fff; }
+/* ヘッダー（青いグラデーション）の上の「タスクを追加」は白いボタンのまま（背景と同化しないように） */
+html.in-stride .app-header .btn-primary,
+html.in-stride .app-header .btn-primary:hover {
+  background: #fff; color: #0c2040; border-color: #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18); filter: none;
+}
+html.in-stride .summary,
+html.in-stride .panel { border-radius: 18px; }
+
+/* ---------- 保存場所の表示 ---------- */
+.stride-local-note { margin: 8px auto 0; font-size: 12px; color: var(--color-text-muted); }
+
+/* ---------- 下部タブ（STRIDE と共通） ---------- */
+html.in-stride body { padding-bottom: calc(var(--stride-tab-h) + env(safe-area-inset-bottom, 0px) + 16px); }
+.stride-tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
+  display: grid; grid-template-columns: repeat(6, 1fr);
+  height: calc(var(--stride-tab-h) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid var(--color-border);
+}
+.stride-tab {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  padding: 6px 0; color: var(--color-text-subtle);
+  font-family: system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif;
+  font-size: 11px; font-weight: 600; text-decoration: none; white-space: nowrap;
+}
+.stride-tab svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.stride-tab.active { color: var(--color-primary); font-weight: 800; }
+.stride-tab.active svg { transform: translateY(-1px) scale(1.08); }
+.stride-tab.active::before {
+  content: ""; position: absolute; top: 0; left: 50%; width: 28px; height: 3px;
+  transform: translateX(-50%); border-radius: 0 0 3px 3px; background: var(--color-primary);
+}
+/* 通知（トースト）が下部タブに隠れないようにする */
+html.in-stride .toast-region { bottom: calc(var(--stride-tab-h) + env(safe-area-inset-bottom, 0px) + 12px); }
+
+@media print {
+  .stride-tabbar, .stride-local-note { display: none; }
+}
