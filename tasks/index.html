@@ -2,11 +2,18 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="何を、いつまでに、誰がやるかを見える化するタスク・案件の進捗管理ツール">
-  <title>Task Board</title>
+  <title>タスク | STRIDE</title>
+  <!-- STRIDE（PWA）との連携。claude.ai 版では使われない -->
+  <link rel="manifest" href="../manifest.json">
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="STRIDE">
+  <meta name="theme-color" content="#152a4e">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232f5fa7'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11.5' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="stride-bridge.css">
 </head>
 <body>
   <a class="skip-link" href="#task-list-section">タスク一覧へ移動</a>
@@ -521,5 +528,6 @@
   <!-- claude.ai で開いたときだけ同期する（ローカルで開いたときは何もしない） -->
   <script src="cloud-sync.js"></script>
   <script src="app.js"></script>
+  <script src="stride-bridge.js"></script>
 </body>
 </html>

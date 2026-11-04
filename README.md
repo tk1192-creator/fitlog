@@ -24,6 +24,31 @@
 
 基礎代謝は国立健康・栄養研究所の式による推定値、カロリーの目安は脂肪 1kg ≒ 7,200kcal で計算した目安です（医学的な判断ではありません）。
 
+## タスク管理（Task Board）
+
+下部タブの「タスク」で、タスク・案件の進捗管理ツール **Task Board** が開きます（`tasks/` フォルダ）。
+一覧・ボード・ガントチャート・カレンダー表示、チェックリスト、繰り返し、報告文の作成などが使えます。
+使い方は Task Board 画面右上の「?」（`tasks/manual.html`）を参照してください。
+STRIDE のホームには、期限切れ・今日が期限・作業中の件数と、今日対応するタスクを表示します。
+
+### データの扱い（重要）
+
+| 版 | 保存場所 | 同期 | お客様情報 |
+|---|---|---|---|
+| STRIDE のタスク（この版） | その端末のブラウザ内（localStorage `taskBoard.data`） | なし | 会社の規定に従う（私用端末への保存可否は要確認） |
+| PC のローカル版（元の Task Board） | PC のブラウザ内 | なし | お客様情報を含むタスクはこちらで扱う |
+| claude.ai 版 | claude.ai のデータベース | PC と iPhone で自動同期 | **入力しない** |
+
+- STRIDE のタスクはサーバーに送信しません。PC のローカル版・claude.ai 版とはデータを共有しません。
+- 端末間でデータを移すときは「JSONをエクスポート」→「JSONからインポート」を使います。お客様情報を含む場合は、メールやクラウド（OneDrive など）を経由せず、AirDrop やケーブル接続で受け渡してください。
+- GitHub Pages の保存領域は `tk1192-creator.github.io` 全体で共通です。このアカウントで STRIDE 以外のサイトを Pages に公開すると、そのサイトから Task Board のデータを読めてしまうため、公開しないでください。
+
+### Task Board の修正と claude.ai 版
+
+- 今後の Task Board の修正は、このリポジトリの `tasks/` を正とします（元のフォルダ `AI_自己管理ツール` は 2026-11-04 時点のまま残しています）。
+- `tasks/app.js`・`tasks/style.css` は元の Task Board と同じ内容です。STRIDE との連携（戻るボタン・保存場所の表示・オフライン対応）は `tasks/stride-bridge.js`・`tasks/stride-bridge.css` に分けており、claude.ai で開いたときは動きません。
+- claude.ai 版を作り直すときは、Claude Code に「Task Board の claude.ai 版を、STRIDE の tasks/ で更新して」と依頼してください（claude.ai 版のリンクは公開リポジトリには載せず、Claude Code のメモリに記録しています）。
+
 ## 使い方
 
 1. 設定画面で身長・年齢・目標体重（任意で目標達成日）・週の運動目標日数・歩数目標・性別・活動レベルを入力し、「設定を保存」を押す。
@@ -69,7 +94,8 @@ python -m http.server 8000
 ブラウザで http://localhost:8000/ を開きます。止めるときはターミナルで `Ctrl + C` を押します。
 
 - 単体テスト: http://localhost:8000/tests/index.html を開くと、計算処理と自己ベスト判定のテストが実行されます（全件成功なら「すべて成功」と表示）。
-- 開発中は Service Worker が古いファイルを返すことがあります。`Ctrl + Shift + R` で再読み込みするか、
+- タスク画面は http://localhost:8000/tasks/ です。
+- 開発中は Service Worker が古いファイルを返すことがあります（タスク画面を開いたときも登録されます）。`Ctrl + Shift + R` で再読み込みするか、
   Chrome の開発者ツール（F12）→「Application」→「Service workers」で「Update on reload」にチェックを入れてください。
 
 ## 修正を反映する流れ
@@ -101,7 +127,8 @@ js/app.js             初期化・タブ切替・日時表示
 js/calc.js            計算処理（BMI・ペース・1RM・移動平均・週集計・ストリーク）
 js/pb.js              自己ベスト判定
 js/storage.js         保存・JSON / CSV 入出力
-js/views/*.js         各画面
+js/views/*.js         各画面（home-tasks.js はホームの「今日のタスク」）
+tasks/                Task Board（タスク管理）。stride-bridge.* が STRIDE との連携部分
 lib/                  Chart.js v4.5.0、canvas-confetti v1.9.3（オフライン動作のため同梱）
 icons/                アプリアイコン（tools/make_icons.py で生成）
 tests/                単体テスト（ブラウザで実行）

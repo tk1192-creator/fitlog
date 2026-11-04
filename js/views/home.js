@@ -2,6 +2,7 @@
 import { bmi, bmiCategory, fmtNum, latestWeight, startWeight } from '../calc.js';
 import { fmtDateShort, h } from '../ui.js';
 import { goalCards, signed } from './home-goal.js';
+import { tasksCard } from './home-tasks.js';
 
 export function render(root, app) {
   const { weights } = app.data;
@@ -17,6 +18,7 @@ export function render(root, app) {
         h('p', { class: 'hero-text', text: '下のボタンから体重を記録すると、ここに現在の体重や BMI が表示されます。' }),
       ),
       quickAdd(app),
+      tasksCard(),
       h('p', { class: 'card-note center', text: '動作を試すときは、設定画面の「危険な操作」からサンプルデータを生成できます。' }),
     );
     return;
@@ -41,6 +43,7 @@ export function render(root, app) {
   ));
 
   root.append(quickAdd(app));
+  root.append(tasksCard());
   root.append(...goalCards(app, latest));
 }
 

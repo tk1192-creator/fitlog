@@ -27,12 +27,22 @@ const ASSETS = [
   './js/views/bests.js',
   './js/views/calendar.js',
   './js/views/settings.js',
+  './js/views/home-tasks.js',
   './lib/chart.umd.min.js',
   './lib/confetti.browser.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
   './icons/apple-touch-icon.png',
+  // Task Board（タスク画面）。マニュアルの画像は開いたときにキャッシュする
+  './tasks/',
+  './tasks/index.html',
+  './tasks/style.css',
+  './tasks/app.js',
+  './tasks/cloud-sync.js',
+  './tasks/stride-bridge.js',
+  './tasks/stride-bridge.css',
+  './tasks/manual.html',
 ];
 
 self.addEventListener('install', (event) => {
@@ -62,11 +72,18 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  // 画面遷移（アドレスバーやホーム画面からの起動）は index.html を返す
+  // 画面遷移（アドレスバーやホーム画面からの起動、タスク画面への移動）は、そのページのキャッシュを返す。
+  // キャッシュになく、オフラインで取得もできないときは STRIDE のホーム（index.html）を返す。
   if (req.mode === 'navigate') {
-    event.respondWith(
-      caches.match('./index.html').then((cached) => cached || fetch(req)),
-    );
+    event.respondWith((async () => {
+      const cached = await caches.match(req, { ignoreSearch: true });
+      if (cached) return cached;
+      try {
+        return await fetch(req);
+      } catch (err) {
+        return (await caches.match('./index.html')) || Response.error();
+      }
+    })());
     return;
   }
 

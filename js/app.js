@@ -34,7 +34,7 @@ const app = {
   navigate(tab, params = {}) {
     this.current = tab;
     this.params = params;
-    document.querySelectorAll('.tab').forEach((b) => {
+    document.querySelectorAll('.tab[data-tab]').forEach((b) => {
       const on = b.dataset.tab === tab;
       b.classList.toggle('active', on);
       if (on) b.setAttribute('aria-current', 'page');
@@ -55,7 +55,8 @@ const app = {
   },
 };
 
-document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => app.navigate(b.dataset.tab)));
+// data-tab を持つタブだけがアプリ内の画面切替。「タスク」タブは別ページ（tasks/）へのリンク
+document.querySelectorAll('.tab[data-tab]').forEach((b) => b.addEventListener('click', () => app.navigate(b.dataset.tab)));
 
 // OS のダーク / ライト切替時にグラフの色を描き直す
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => app.render());

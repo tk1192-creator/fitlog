@@ -1,0 +1,71 @@
+// ホーム画面の「今日のタスク」カード
+// Task Board（tasks/）が同じサイトの localStorage に保存しているデータ（taskBoard.data）を読むだけで、書き込みはしない。
+import { todayStr } from '../calc.js';
+import { h } from '../ui.js';
+import { stat } from './home-goal.js';
+
+const TASK_KEY = 'taskBoard.data';
+const MAX_LIST = 3;
+
+/** Task Board のタスク一覧を読む。読めなければ null */
+export function loadTasks() {
+  try {
+    const raw = localStorage.getItem(TASK_KEY);
+    if (!raw) return [];
+    const data = JSON.parse(raw);
+    return Array.isArray(data?.tasks) ? data.tasks : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+/** 集計（期限切れ・今日が期限・作業中・今日やる）と、表示するタスク */
+export function summarizeTasks(tasks, today) {
+  const open = tasks.filter((t) => t && t.status !== 'done' && typeof t.due === 'string');
+  const overdue = open.filter((t) => t.due < today);
+  const dueToday = open.filter((t) => t.due === today);
+  const doing = open.filter((t) => t.status === 'doing');
+  const myDay = open.filter((t) => t.myDay === today);
+  // 表示順: 期限切れ（古い順）→ 今日が期限 → 今日やる
+  const seen = new Set();
+  const list = [...overdue.sort((a, b) => (a.due < b.due ? -1 : 1)), ...dueToday, ...myDay]
+    .filter((t) => (seen.has(t.id) ? false : seen.add(t.id)));
+  return { overdue: overdue.length, dueToday: dueToday.length, doing: doing.length, myDay: myDay.length, list, openCount: open.length };
+}
+
+export function tasksCard() {
+  const openTasks = () => { location.href = './tasks/'; };
+  const card = h('section', { class: 'card' }, h('h2', { class: 'card-title', text: '今日のタスク' }));
+  const tasks = loadTasks();
+
+  if (tasks === null) {
+    card.append(h('p', { class: 'card-note', text: 'タスクのデータを読み取れませんでした。タスク画面で確認してください。' }));
+  } else if (!tasks.length) {
+    card.append(h('p', { class: 'card-note', text: 'タスク画面（Task Board）でタスクを登録すると、期限切れや今日が期限のタスクをここに表示します。' }));
+  } else {
+    const today = todayStr();
+    const s = summarizeTasks(tasks, today);
+    card.append(h('div', { class: 'stats stats-3' },
+      stat('期限切れ', `${s.overdue}`, '件'),
+      stat('今日が期限', `${s.dueToday}`, '件'),
+      stat('作業中', `${s.doing}`, '件'),
+    ));
+    if (s.overdue) card.lastChild.firstChild.classList.add('stat-alert');
+    if (s.list.length) {
+      card.append(h('ul', { class: 'task-peek' }, s.list.slice(0, MAX_LIST).map((t) => {
+        const kind = t.due < today ? 'overdue' : t.due === today ? 'today' : 'myday';
+        const badge = kind === 'overdue' ? '期限切れ' : kind === 'today' ? '今日が期限' : '今日やる';
+        return h('li', { class: `task-peek-item ${kind}` },
+          h('span', { class: 'task-peek-badge', text: badge }),
+          h('span', { class: 'task-peek-title', text: t.title || '（無題）' }),
+          t.project ? h('span', { class: 'task-peek-project', text: t.project }) : null,
+        );
+      })));
+      if (s.list.length > MAX_LIST) card.append(h('p', { class: 'card-note', text: `ほか ${s.list.length - MAX_LIST} 件` }));
+    } else {
+      card.append(h('p', { class: 'card-note', text: `期限切れ・今日が期限のタスクはありません（未完了 ${s.openCount} 件）。` }));
+    }
+  }
+  card.append(h('button', { type: 'button', class: 'btn btn-block', text: 'タスク画面を開く', onclick: openTasks }));
+  return card;
+}
