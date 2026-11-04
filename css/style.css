@@ -532,6 +532,52 @@ th { color: var(--text-secondary); font-weight: 700; position: sticky; top: 0; b
 
 .noscript { padding: 16px; text-align: center; }
 
+/* ---------- 狭い画面（iPhone など）でのはみ出し対策 ---------- */
+
+/* グリッド・フレックスの子要素が中身の幅で押し広げられないようにする */
+.row-2 > *, .row-3 > *, .stats > *, .hero-stats > *, .time-inputs > *, .inline-form > *,
+.field, .cal-row > *, .best-row > *, .week-dots > *, .quick-add > * { min-width: 0; }
+input, select { min-width: 0; max-width: 100%; }
+/* iPhone の日付入力は既定で幅が広く、列からはみ出しやすい */
+input[type="date"] { min-width: 0; text-align: left; }
+input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+/* 長い文字列は必要なところで折り返す */
+.stat-value, .stat-sub, .hero-stat-value, .hero-stat-sub, .best-sub, .best-value,
+.record-main, .record-sub, .record-memo, .day-detail, .card-note, .notice, .chip span,
+.celebrate-list li, .live { overflow-wrap: anywhere; }
+
+@media (max-width: 400px) {
+  .appbar { padding-left: 12px; padding-right: 12px; }
+  .appbar h1 { font-size: 19px; }
+  .clock-time { font-size: 20px; }
+  .view { padding-left: 12px; padding-right: 12px; }
+  .card { padding: 14px 12px; }
+  .hero-card { padding: 16px 14px 14px; }
+  .hero-value { font-size: 54px; }
+  .hero-stats { gap: 6px; }
+  .hero-stat { padding: 6px 8px; }
+  .hero-stat-value { font-size: 17px; }
+  .stats { gap: 8px; }
+  .stat { padding: 8px 10px; }
+  .stat-value { font-size: 18px; }
+  .quick-btn { min-height: 92px; font-size: 15px; }
+  .row-3 { gap: 6px; }
+  input[type="text"], input[type="number"], input[type="date"], select { padding-left: 10px; padding-right: 10px; }
+  select { padding-right: 30px; }
+  .record-item { grid-template-columns: 62px 1fr; }
+  .record-date { font-size: 13px; }
+  .seg { padding: 0 10px; font-size: 13px; }
+  .best-row { grid-template-columns: 5.5em 1fr; row-gap: 0; }
+  .best-sub { grid-column: 2; text-align: left; }
+  .cal-row { grid-template-columns: repeat(7, 1fr) 32px; gap: 2px; padding: 2px; }
+  .cal-day { min-height: 46px; }
+  .cal-num { font-size: 14px; }
+  .wk-badge { width: 26px; height: 26px; font-size: 13px; }
+  .streak-card { padding: 12px 14px; gap: 10px; }
+  .streak-value strong { font-size: 34px; }
+  .week-count strong { font-size: 34px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }

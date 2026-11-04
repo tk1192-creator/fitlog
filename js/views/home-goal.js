@@ -56,7 +56,7 @@ function goalCard(app, latest) {
   if (targetDate) {
     const days = daysBetween(today, targetDate);
     const need = weeklyChangeNeeded(latest.weightKg, target, today, targetDate);
-    stats.push(stat('目標達成日まで', days > 0 ? `残り ${days}日` : days === 0 ? '今日' : '期日を過ぎました', fmtDateLong(targetDate)));
+    stats.push(stat('目標達成日まで', days > 0 ? `残り ${days}日` : days === 0 ? '今日' : '期日超過', fmtDateLong(targetDate)));
     if (!reached && need != null) {
       const perWeek = Math.abs(need);
       stats.push(stat('1週間あたりの目安', `${need > 0 ? '-' : '+'}${fmtNum(perWeek, 2)}kg`, paceNote(perWeek, latest.weightKg)));
