@@ -54,7 +54,7 @@ fitlog/
 │  ├─ sw-register.js        Service Worker 登録と「更新があります」バナー
 │  └─ views/                home / records / charts / calendar / settings
 ├─ lib/                     chart.umd.min.js、confetti.browser.js
-├─ icons/                   icon-192.png、icon-512.png、apple-touch-icon.png(180px)
+├─ icons/                   icon-192.png、icon-512.png、icon-maskable-512.png、apple-touch-icon.png(180px)
 ├─ tests/                   calc.js・pb.js のブラウザ実行テスト（tests/index.html）
 ├─ docs/design.md           本書
 ├─ .github/workflows/pages.yml
@@ -121,7 +121,10 @@ localStorage キー `fitlog.v1` に以下の JSON を 1 つ保存する。
 
 - manifest.json: name「fitlog 運動・体重記録」、short_name「fitlog」、display standalone、start_url/scope `./`、アイコン 192/512。
 - iPhone 用に `apple-touch-icon` と `apple-mobile-web-app-*` メタタグ。
-- Service Worker: キャッシュ名 `fitlog-v<バージョン>`。アプリ一式を事前キャッシュ。activate で旧キャッシュ削除。
+- バージョンは `js/version.js` の `APP_VERSION` に一元化し、ページ（設定画面の表示）と Service Worker（importScripts）の両方で使う。
+- Service Worker: キャッシュ名 `fitlog-v<バージョン>`。アプリ一式を事前キャッシュ（HTTP キャッシュを使わず取得）。activate で旧キャッシュ削除。
+- 取得方式: キャッシュ優先（なければネットワークから取得してキャッシュに追加）。画面遷移は index.html を返す。
+- アプリに戻ってきたとき（visibilitychange）に更新を確認する。
   新しい SW が待機中になったら「更新があります」バナーを表示し、押すと skipWaiting → 再読み込み。
 
 ## 9. 実装段階

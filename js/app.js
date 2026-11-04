@@ -6,6 +6,7 @@ import * as charts from './views/charts.js';
 import * as calendar from './views/calendar.js';
 import * as settings from './views/settings.js';
 import { toast } from './ui.js';
+import { registerSW } from './sw-register.js';
 
 const VIEWS = { home, records, charts, calendar, settings };
 const TITLES = { home: 'ホーム', records: '記録', charts: 'グラフ', calendar: 'カレンダー', settings: '設定' };
@@ -80,6 +81,7 @@ tick();
 setInterval(tick, 1000);
 
 app.navigate('home');
+registerSW();
 
 // デバッグ用（ブラウザのコンソールから参照できるように）
 window.fitlog = app;

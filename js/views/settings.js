@@ -180,7 +180,7 @@ function dangerCard(app) {
 function aboutCard() {
   return h('section', { class: 'card' },
     h('h2', { class: 'card-title', text: 'このアプリについて' }),
-    h('p', { class: 'card-note', id: 'app-version', text: 'fitlog' }),
-    h('p', { class: 'card-note', text: '記録はサーバーに送信されません。グラフは Chart.js、紙吹雪は canvas-confetti（いずれも MIT License）を使用しています。' }),
+    h('p', { class: 'card-note', text: `fitlog バージョン ${self.APP_VERSION || '-'}` }),
+    h('p', { class: 'card-note', text: '記録はサーバーに送信されません。グラフは Chart.js（MIT License）、紙吹雪は canvas-confetti（ISC License）を使用しています。' }),
   );
 }

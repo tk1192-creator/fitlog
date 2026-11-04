@@ -7,6 +7,13 @@
   <meta name="theme-color" content="#eef1f6" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0a0e15" media="(prefers-color-scheme: dark)">
   <title>fitlog 運動・体重記録</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="fitlog">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
@@ -53,6 +60,7 @@
 
   <noscript><p class="noscript">このアプリを使うには JavaScript を有効にしてください。</p></noscript>
 
+  <script src="./js/version.js"></script>
   <script src="./lib/chart.umd.min.js"></script>
   <script src="./lib/confetti.browser.js"></script>
   <script type="module" src="./js/app.js"></script>
