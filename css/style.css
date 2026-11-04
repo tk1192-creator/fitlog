@@ -490,6 +490,9 @@ th { color: var(--text-secondary); font-weight: 700; position: sticky; top: 0; b
 
 /* ---------- 設定 ---------- */
 
+.lock-status { margin: 4px 0 10px; font-weight: 800; color: var(--text-secondary); }
+.lock-status.on { color: var(--accent); }
+
 .chip-list { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 4px 4px 12px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); font-weight: 600; }
 .chip-del { width: 32px; height: 32px; border: 0; border-radius: 50%; background: none; color: var(--text-muted); font-size: 18px; cursor: pointer; }

@@ -8,7 +8,80 @@ import { confirmDialog, field, fmtDateLong, h, toast } from '../ui.js';
 const BACKUP_REMIND_DAYS = 14;
 
 export function render(root, app) {
-  root.append(profileCard(app), exerciseCard(app), dataCard(app), dangerCard(app), aboutCard());
+  root.append(profileCard(app), exerciseCard(app), lockCard(app), dataCard(app), dangerCard(app), aboutCard());
+}
+
+/* ---------- Face ID でロック（js/lock.js の window.StrideLock を使う） ---------- */
+
+const RELOCK_OPTIONS = [[0, 'すぐ'], [1, '1 分後'], [5, '5 分後'], [15, '15 分後']];
+
+function lockCard(app) {
+  const card = h('section', { class: 'card' },
+    h('h2', { class: 'card-title', text: 'Face ID でロック' }),
+    h('p', { class: 'card-note', text: 'アプリを開いたときと、しばらく離れて戻ったときに Face ID（またはパスコード）での解除を求めます。設定はこの端末だけに適用されます。' }),
+  );
+  const body = h('div', {});
+  card.append(body);
+  const lock = window.StrideLock;
+  if (!lock) {
+    body.append(h('p', { class: 'notice', text: 'ロック機能を読み込めませんでした。' }));
+    return card;
+  }
+
+  lock.isSupported().then((ok) => {
+    const c = lock.getConfig();
+    if (!ok) {
+      body.append(h('p', { class: 'notice', text: 'この端末・ブラウザでは使えません（Face ID・Touch ID・Windows Hello などの本人確認が必要です）。' }));
+      return;
+    }
+    const relock = h('select', { 'aria-label': 'ロックするまでの時間', onchange: (e) => { lock.setRelockMinutes(Number(e.target.value)); toast('ロックするまでの時間を変更しました'); } },
+      RELOCK_OPTIONS.map(([v, l]) => h('option', { value: String(v), text: l, selected: (c.enabled ? c.relockMin : 5) === v })));
+
+    if (c.enabled) {
+      body.append(
+        h('p', { class: 'lock-status on', text: '🔒 オン（この端末）' }),
+        h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'アプリから離れて、ロックするまでの時間' }), relock),
+        h('div', { class: 'btn-grid' },
+          h('button', { type: 'button', class: 'btn', text: '今すぐロック', onclick: () => lock.lockNow() }),
+          h('button', {
+            type: 'button', class: 'btn btn-danger', text: 'ロックをオフにする',
+            onclick: async () => {
+              try {
+                await lock.disable();
+                toast('ロックをオフにしました');
+                app.render();
+              } catch (_) {
+                toast('本人確認ができなかったため、オフにしませんでした');
+              }
+            },
+          }),
+        ),
+      );
+    } else {
+      body.append(
+        h('p', { class: 'lock-status', text: '🔓 オフ' }),
+        h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'アプリから離れて、ロックするまでの時間' }), relock),
+        h('button', {
+          type: 'button', class: 'btn btn-primary btn-block', text: 'Face ID でロックをオンにする',
+          onclick: async () => {
+            const ok2 = await confirmDialog(
+              'この端末に STRIDE 専用のパスキーを作り、Face ID でロックします。\nパスキーは iPhone の「パスワード」（iCloud キーチェーン）に保存されます。記録データは送信しません。\nこの画面ロックはのぞき見を防ぐためのもので、データの暗号化は行いません。',
+              { title: 'Face ID でロック', okText: '続ける' },
+            );
+            if (!ok2) return;
+            try {
+              await lock.enable(Number(relock.value));
+              toast('Face ID でのロックをオンにしました');
+              app.render();
+            } catch (_) {
+              toast('パスキーを作成できませんでした（キャンセル、または非対応）');
+            }
+          },
+        }),
+      );
+    }
+  });
+  return card;
 }
 
 /* ---------- プロフィール・目標 ---------- */

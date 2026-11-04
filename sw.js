@@ -11,6 +11,7 @@ const ASSETS = [
   './manifest.json',
   './css/style.css',
   './js/version.js',
+  './js/lock.js',
   './js/app.js',
   './js/calc.js',
   './js/storage.js',
