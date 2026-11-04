@@ -1,4 +1,4 @@
-# fitlog 設計書
+# STRIDE（旧 fitlog）設計書
 
 作成日: 2026-11-04
 
@@ -119,7 +119,7 @@ localStorage キー `fitlog.v1` に以下の JSON を 1 つ保存する。
 
 ## 8. PWA
 
-- manifest.json: name「fitlog 運動・体重記録」、short_name「fitlog」、display standalone、start_url/scope `./`、アイコン 192/512。
+- manifest.json: name「STRIDE 運動・体重・タスク管理」、short_name「STRIDE」（v1.2.0 で fitlog から改名）、display standalone、start_url/scope `./`、アイコン 192/512。
 - iPhone 用に `apple-touch-icon` と `apple-mobile-web-app-*` メタタグ。
 - バージョンは `js/version.js` の `APP_VERSION` に一元化し、ページ（設定画面の表示）と Service Worker（importScripts）の両方で使う。
 - Service Worker: キャッシュ名 `fitlog-v<バージョン>`。アプリ一式を事前キャッシュ（HTTP キャッシュを使わず取得）。activate で旧キャッシュ削除。

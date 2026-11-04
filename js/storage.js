@@ -76,7 +76,7 @@ const str = (v) => (v == null ? '' : String(v));
 export function normalize(obj) {
   if (!obj || typeof obj !== 'object') throw new Error('データの形式が正しくありません');
   if (!Array.isArray(obj.weights) || !Array.isArray(obj.strength) || !Array.isArray(obj.jogs)) {
-    throw new Error('fitlog のデータではありません（weights / strength / jogs がありません）');
+    throw new Error('STRIDE（旧 fitlog）のデータではありません（weights / strength / jogs がありません）');
   }
   const base = defaultData();
   const s = { ...base.settings, ...(obj.settings || {}) };
@@ -154,7 +154,7 @@ function download(filename, content, mime) {
 }
 
 export function exportJSON(data) {
-  download(`fitlog-backup-${todayStr()}.json`, JSON.stringify(data, null, 2), 'application/json');
+  download(`stride-backup-${todayStr()}.json`, JSON.stringify(data, null, 2), 'application/json');
 }
 
 /** CSV の 1 セルをエスケープ */
@@ -178,6 +178,6 @@ export function buildCSV(data) {
 }
 
 export function exportCSV(data) {
-  download(`fitlog-${todayStr()}.csv`, buildCSV(data), 'text/csv');
+  download(`stride-${todayStr()}.csv`, buildCSV(data), 'text/csv');
 }
 

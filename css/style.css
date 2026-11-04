@@ -1,4 +1,4 @@
-/* fitlog スタイル（スマホ優先・ダークモード対応） */
+/* STRIDE スタイル（スマホ優先・ダークモード対応） */
 
 :root {
   color-scheme: light;
@@ -113,7 +113,7 @@ button, input, select { font: inherit; color: inherit; }
   font-family: var(--font-num); font-size: 11px; font-weight: 800; font-style: italic;
   letter-spacing: 0.22em; color: var(--text-muted);
 }
-.brand b { color: var(--accent); }
+.brand b { color: var(--accent); font-style: normal; margin-left: 2px; }
 .appbar h1 { margin: 2px 0 0; font-size: 22px; font-weight: 800; letter-spacing: 0.02em; }
 .clock { display: grid; justify-items: end; line-height: 1.1; }
 .clock-date { font-size: 12px; font-weight: 600; color: var(--text-secondary); }

@@ -1,7 +1,7 @@
 {
-  "name": "fitlog 運動・体重記録",
-  "short_name": "fitlog",
-  "description": "筋トレ・ジョギング・体重を記録して、推移をグラフで確認できるアプリ",
+  "name": "STRIDE 運動・体重・タスク管理",
+  "short_name": "STRIDE",
+  "description": "筋トレ・ジョギング・体重・タスクを記録して、毎日の前進を確認できるアプリ",
   "lang": "ja",
   "start_url": "./",
   "scope": "./",
