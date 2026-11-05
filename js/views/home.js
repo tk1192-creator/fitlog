@@ -50,8 +50,8 @@ export function render(root, app) {
 
   if (!latest) {
     root.append(
-      h('section', { class: 'hero-card' },
-        h('p', { class: 'hero-eyebrow', text: 'WELCOME' }),
+      h('section', { class: 'hero-card bib' },
+        bibBand(''),
         h('h2', { class: 'hero-headline', text: '今日から記録を始めよう' }),
         h('p', { class: 'hero-text', text: '下のボタンから体重を記録すると、ここに現在の体重や BMI が表示されます。' }),
       ),
@@ -64,11 +64,8 @@ export function render(root, app) {
 
   const b = bmi(latest.weightKg, heightCm);
   const diff = start && start.id !== latest.id ? latest.weightKg - start.weightKg : null;
-  root.append(h('section', { class: 'hero-card' },
-    h('div', { class: 'hero-top' },
-      h('p', { class: 'hero-eyebrow', text: 'CURRENT WEIGHT' }),
-      h('span', { class: 'hero-date', text: `${fmtDateShort(latest.date)} の記録` }),
-    ),
+  root.append(h('section', { class: 'hero-card bib', 'aria-label': '今の体重' },
+    bibBand(`${fmtDateShort(latest.date)} の記録`),
     h('div', { class: 'hero' },
       h('span', { class: 'hero-value', text: fmtNum(latest.weightKg) }),
       h('span', { class: 'hero-unit', text: 'kg' }),
@@ -87,6 +84,15 @@ export function render(root, app) {
   if (review) root.append(review);
   root.append(tasksCard());
   root.append(...goalCards(app, latest));
+}
+
+/** ゼッケンの上の帯（STRIDE の文字と、安全ピンの穴 4 つ） */
+function bibBand(note) {
+  return h('div', { class: 'bib-band' },
+    h('span', { class: 'bib-brand', text: 'STRIDE' }),
+    note ? h('span', { class: 'bib-note', text: note }) : null,
+    ...['tl', 'tr', 'bl', 'br'].map((c) => h('i', { class: `bib-pin ${c}`, 'aria-hidden': 'true' })),
+  );
 }
 
 function heroStat(label, value, sub) {

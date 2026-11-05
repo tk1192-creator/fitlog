@@ -3,6 +3,7 @@ import { addDays, daysBetween, energyPlan, exerciseDays, fmtInt, fmtNum, startWe
 import { goalDirection, meetsGoal } from '../pb.js';
 import { INTAKE_MIN_DAYS, estimatedExpenditure, forecastGoal, weightTrend } from '../trend.js';
 import { evaluateBadges, milestoneState } from '../badges.js';
+import { trackGraphic } from './track.js';
 import { fmtDateLong, h } from '../ui.js';
 
 export function stat(label, value, sub) {
@@ -50,7 +51,8 @@ function goalCard(app, latest) {
     progress = Math.max(0, Math.min(100, Math.round((done / total) * 100)));
   }
 
-  const stats = [
+  // トラックの絵を出すとき（開始時と目標の向きが分かるとき）は、目標体重と残りは絵の中に書くので重ねて出さない
+  const stats = progress != null ? [] : [
     stat('目標体重', `${fmtNum(target)}kg`),
     stat('目標まで', reached ? '達成！' : `あと ${fmtNum(Math.abs(remain))}kg`, reached ? '目標を達成しています' : direction === 'gain' ? '増量' : '減量'),
   ];
@@ -74,13 +76,14 @@ function goalCard(app, latest) {
 
   card.append(h('div', { class: 'stats' }, stats));
   if (!trend) card.append(h('p', { class: 'card-note', text: '体重を 2 週間以上（5 回以上）記録すると、今のペースと目標の達成見込みを表示します。' }));
+  // 400m トラック：開始時から目標までを 1 周として、今どこまで来たか（タイトルのすぐ下に置く）
   if (progress != null) {
-    card.append(
-      h('div', { class: 'progress', role: 'progressbar', 'aria-label': '目標への進捗', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(progress) },
-        h('div', { class: 'progress-bar', style: `width:${progress}%` }),
-      ),
-      h('p', { class: 'card-note', text: `開始時（${fmtNum(start.weightKg)}kg）から目標までの ${progress}% を達成` }),
-    );
+    const track = h('div', { class: 'track-box' }, trackGraphic(progress, {
+      title: `目標 ${fmtNum(target)}kg`,
+      value: reached ? '達成！' : `あと ${fmtNum(Math.abs(remain))}kg`,
+      sub: `${progress}%（開始 ${fmtNum(start.weightKg)}kg から）`,
+    }));
+    card.insertBefore(track, card.children[1]);
   }
   // 次の節目（目標までを 1kg ごとに区切ったもの。7 日平均で判定）
   const ms = reached ? null : milestoneState(app.data);
