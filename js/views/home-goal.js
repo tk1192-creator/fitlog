@@ -1,6 +1,7 @@
 // ホーム画面の「目標」と「今週の運動」カード
 import { addDays, daysBetween, energyPlan, exerciseDays, fmtInt, fmtNum, startWeight, streakWeeks, todayStr, weekStart, weeklyChangeNeeded } from '../calc.js';
 import { goalDirection, meetsGoal } from '../pb.js';
+import { INTAKE_MIN_DAYS, estimatedExpenditure, forecastGoal, weightTrend } from '../trend.js';
 import { fmtDateLong, h } from '../ui.js';
 
 export function stat(label, value, sub) {
@@ -63,7 +64,15 @@ function goalCard(app, latest) {
     }
   }
 
+  // 今のペースと達成見込み（直近 4 週の体重の傾向）
+  const trend = weightTrend(app.data.weights, today);
+  if (trend) {
+    stats.push(stat('今のペース', `${signed(trend.perWeek, 2)}kg/週`, '直近 4 週の傾向'));
+    if (!reached) stats.push(forecastStat(forecastGoal(trend, target, today), direction, targetDate, today));
+  }
+
   card.append(h('div', { class: 'stats' }, stats));
+  if (!trend) card.append(h('p', { class: 'card-note', text: '体重を 2 週間以上（5 回以上）記録すると、今のペースと目標の達成見込みを表示します。' }));
   if (progress != null) {
     card.append(
       h('div', { class: 'progress', role: 'progressbar', 'aria-label': '目標への進捗', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(progress) },
@@ -73,6 +82,26 @@ function goalCard(app, latest) {
     );
   }
   return card;
+}
+
+/** 達成見込み（今のペースが続いた場合に目標体重に届く日） */
+function forecastStat(f, direction, targetDate, today) {
+  if (f.status === 'ok') {
+    const [y, m, d] = f.date.split('-').map(Number);
+    let sub = 'このペースが続いた場合';
+    if (targetDate && targetDate >= today) {
+      const gap = daysBetween(f.date, targetDate); // 正なら目標日より早い
+      sub = gap > 0 ? `目標日より ${gap} 日早い見込み` : gap < 0 ? `⚠ 目標日より ${-gap} 日遅れる見込み` : '目標日ちょうどの見込み';
+    }
+    return stat('達成見込み', `${y}/${m}/${d}`, sub);
+  }
+  const text = {
+    reached: ['もうすぐ', '傾向では目標に届いています'],
+    flat: ['横ばい', '体重がほとんど変わっていません'],
+    away: ['逆向き', direction === 'gain' ? '体重が減る傾向です' : '体重が増える傾向です'],
+    far: ['2 年以上先', '今のペースでは時間がかかります'],
+  }[f.status];
+  return stat('達成見込み', text[0], text[1]);
 }
 
 /** 1 週間あたりの変化量が大きすぎないかの目安（体重の 1%/週 を超えたら注意） */
@@ -114,6 +143,7 @@ function energyCard(app, latest) {
       stat('消費の目安', `${fmtInt(plan.tdee)}`, `kcal/日（×${plan.factor}）`),
       stat('摂取の目安', plan.intakeTarget != null ? `${fmtInt(plan.intakeTarget)}` : '-', plan.intakeTarget != null ? 'kcal/日' : '目標達成日の設定で表示'),
     ));
+    card.append(expenditureNote(app, plan, today));
     if (plan.belowBmr) {
       card.append(h('p', { class: 'notice notice-warn', text: '⚠ 摂取の目安が基礎代謝を下回っています。無理な減量ペースなので、目標達成日を延ばすことを検討してください。' }));
     }
@@ -131,6 +161,24 @@ function energyCard(app, latest) {
   card.append(h('button', { type: 'button', class: 'btn btn-block', text: '＋ 食事・歩数を記録', onclick: () => app.navigate('records', { type: 'daily' }) }));
   card.append(h('p', { class: 'card-note', text: '基礎代謝は国立健康・栄養研究所の式による推定値、カロリーは脂肪 1kg ≒ 7,200kcal で計算した目安です。' }));
   return card;
+}
+
+/** 記録から見た実際の消費（食事の記録と体重の変化から逆算） */
+function expenditureNote(app, plan, today) {
+  const e = estimatedExpenditure(app.data, today);
+  let text;
+  if (!e) text = '体重を 2 週間以上・食事を 14 日以上記録すると、記録から見た「実際の消費」を推定します。';
+  else if (e.status === 'short') text = `食事をあと ${INTAKE_MIN_DAYS - e.have} 日記録すると、記録から見た「実際の消費」を推定します（直近 4 週で ${e.have} 日）。`;
+  else if (e.status === 'odd') text = '食事の記録と体重の変化が合わないため、実際の消費を推定できません（食事の記録漏れがないか確認してください）。';
+  if (text) return h('p', { class: 'card-note', text });
+  const diff = e.tdee - plan.tdee;
+  return h('div', { class: 'estimate' },
+    h('div', { class: 'estimate-head' },
+      h('span', { text: '記録から見た実際の消費' }),
+      h('span', {}, h('strong', { text: fmtInt(e.tdee) }), ' kcal/日'),
+    ),
+    h('p', { class: 'meter-sub', text: `直近 4 週：平均摂取 ${fmtInt(e.avgIntake)}kcal（${e.days} 日）・体重 ${signed(e.perWeek, 2)}kg/週。式の目安より ${diff >= 0 ? `${fmtInt(diff)}kcal 多い` : `${fmtInt(-diff)}kcal 少ない`}` }),
+  );
 }
 
 /* ---------- 今週の運動 ---------- */

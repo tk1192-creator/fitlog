@@ -4,5 +4,6 @@ import './pb.test.js';
 import './tasks.test.js';
 import './cloud.test.js';
 import './share.test.js';
+import './trend.test.js';
 
 report();

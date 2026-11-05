@@ -482,6 +482,9 @@ th { color: var(--text-secondary); font-weight: 700; position: sticky; top: 0; b
 .meter-fill.over { background: linear-gradient(135deg, #e66767, #c93a39); }
 .meter-fill.done { background: linear-gradient(135deg, #f6c548, #eda100); }
 .meter-sub { margin: 4px 0 0; font-size: 12px; color: var(--text-muted); }
+.estimate { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); }
+.estimate-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 13px; color: var(--text-secondary); font-weight: 600; }
+.estimate-head strong { font-family: var(--font-num); font-size: 20px; color: var(--text-primary); font-weight: 800; }
 .stats-3 { grid-template-columns: repeat(3, 1fr); }
 
 /* ---------- 今日のタスク ---------- */

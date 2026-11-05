@@ -1,8 +1,9 @@
 // グラフ画面: 体重・筋トレ・ジョギングの推移
 import {
   dailyStrengthStats, dayIndex, dayIndexToStr, energyPlan, filterByPeriod, fmtInt, fmtNum, formatPace,
-  latestWeight, monthlyJogStats, movingAverage, sortByDate, todayStr,
+  latestWeight, monthlyJogStats, movingAverage, round, sortByDate, todayStr,
 } from '../calc.js';
+import { forecastGoal, weightTrend } from '../trend.js';
 import { fmtDateShort, h, segmented } from '../ui.js';
 import { renderBestList } from './bests.js';
 
@@ -110,7 +111,7 @@ function baseOptions(t, { xIsDay = true, yTitle = '', reverseY = false, yTick = 
   };
 }
 
-/** 目標ラインの右端に文字を描くプラグイン */
+/** 目標ラインの左端に文字を描くプラグイン（右端は予測の点線と重なるため） */
 const targetLabelPlugin = {
   id: 'targetLabel',
   afterDatasetsDraw(chart, _args, opts) {
@@ -121,9 +122,9 @@ const targetLabelPlugin = {
     ctx.save();
     ctx.font = '600 12px system-ui, sans-serif';
     ctx.fillStyle = opts.color;
-    ctx.textAlign = 'right';
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'bottom';
-    ctx.fillText(opts.text, chartArea.right - 4, y - 4);
+    ctx.fillText(opts.text, chartArea.left + 4, y - 4);
     ctx.restore();
   },
 };
@@ -151,7 +152,16 @@ function renderWeight(root, app) {
   const t = theme();
   const xs = inPeriod.map((w) => dayIndex(w.date));
   const xMin = Math.min(...xs);
-  const xMax = Math.max(...xs, xMin + 1);
+  // 予測（今のペースが続いた場合）：目標に 120 日以内に届くならその日まで、そうでなければ 4 週先まで
+  const trend = weightTrend(all, today);
+  let projection = null;
+  if (trend) {
+    const f = forecastGoal(trend, target, today);
+    const days = f?.status === 'ok' && f.days <= 120 ? f.days : 28;
+    const endY = f?.status === 'ok' && f.days <= 120 ? target : trend.current + trend.slopePerDay * days;
+    projection = [{ x: dayIndex(today), y: trend.current }, { x: dayIndex(today) + days, y: round(endY, 2) }];
+  }
+  const xMax = Math.max(...xs, xMin + 1, projection ? projection[1].x + 2 : 0); // 予測の終点が端で切れないよう 2 日あける
   const datasets = [
     {
       label: '体重', data: inPeriod.map((w) => ({ x: dayIndex(w.date), y: w.weightKg })),
@@ -166,7 +176,14 @@ function renderWeight(root, app) {
   if (target) {
     datasets.push({
       label: `目標 ${fmtNum(target)}kg`, data: [{ x: xMin, y: target }, { x: xMax, y: target }],
-      borderColor: t.text, backgroundColor: t.text, borderWidth: 1.5, borderDash: [6, 4], pointRadius: 0, pointHoverRadius: 0,
+      borderColor: t.text, backgroundColor: t.text, borderWidth: 1.5, borderDash: [6, 4], pointRadius: 0, pointHoverRadius: 0, noTip: true,
+    });
+  }
+  if (projection) {
+    datasets.push({
+      label: '予測（今のペース）', data: projection,
+      borderColor: t.s2, backgroundColor: t.s2, borderWidth: 2, borderDash: [2, 4], pointRadius: [0, 4], pointHoverRadius: 5,
+      pointBorderColor: t.surface, pointBorderWidth: 2,
     });
   }
   const opts = baseOptions(t, { yTitle: 'kg' });
@@ -174,10 +191,10 @@ function renderWeight(root, app) {
   opts.scales.x.min = xMin;
   opts.scales.x.max = xMax;
   opts.plugins.targetLabel = target ? { value: target, text: `目標 ${fmtNum(target)}kg`, color: t.text } : {};
-  opts.plugins.tooltip.filter = (item) => item.dataset.label !== datasets[2]?.label;
+  opts.plugins.tooltip.filter = (item) => !item.dataset.noTip;
   opts.plugins.tooltip.callbacks.label = (item) => `${item.dataset.label}: ${fmtNum(item.parsed.y, 2)}kg`;
 
-  const { card, canvas } = chartCard('体重の推移', '点は実測値、オレンジの線は 7 日移動平均です。');
+  const { card, canvas } = chartCard('体重の推移', `点は実測値、オレンジの線は 7 日移動平均です。${projection ? '点線は直近 4 週のペースが続いた場合の予測です。' : ''}`);
   card.append(tableDetails(['日付', '体重(kg)', '7日平均(kg)', '体脂肪率(%)'],
     [...inPeriod].reverse().map((w) => {
       const m = ma.find((p) => p.date === w.date);
@@ -193,7 +210,7 @@ function renderWeight(root, app) {
     root.append(c2.card);
     const o2 = baseOptions(t, { yTitle: '%', legend: false });
     o2.scales.x.min = xMin;
-    o2.scales.x.max = xMax;
+    o2.scales.x.max = Math.max(...xs, xMin + 1); // 予測の分は伸ばさない
     o2.plugins.tooltip.callbacks.label = (item) => `体脂肪率: ${fmtNum(item.parsed.y)}%`;
     makeChart(c2.canvas, {
       type: 'line',
