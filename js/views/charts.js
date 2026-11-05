@@ -194,7 +194,7 @@ function renderWeight(root, app) {
   opts.plugins.tooltip.filter = (item) => !item.dataset.noTip;
   opts.plugins.tooltip.callbacks.label = (item) => `${item.dataset.label}: ${fmtNum(item.parsed.y, 2)}kg`;
 
-  const { card, canvas } = chartCard('体重の推移', `点は実測値、赤い線は 7 日移動平均です。${projection ? '点線は直近 4 週のペースが続いた場合の予測です。' : ''}`);
+  const { card, canvas } = chartCard('体重の推移', `点は実測値、オレンジの線は 7 日移動平均です。${projection ? '点線は直近 4 週のペースが続いた場合の予測です。' : ''}`);
   card.append(tableDetails(['日付', '体重(kg)', '7日平均(kg)', '体脂肪率(%)'],
     [...inPeriod].reverse().map((w) => {
       const m = ma.find((p) => p.date === w.date);

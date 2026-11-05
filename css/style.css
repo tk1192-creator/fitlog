@@ -1,6 +1,6 @@
 /* STRIDE スタイル（スマホ優先・ダークモード対応）
-   v2.8.0 デザイン「陸上トラック」：競技場のトラックの赤・アスファルトの紺・レーンの白。
-   数字は電光掲示板やゼッケンのような細長い書体（Barlow Condensed、fonts/ に同梱。SIL OFL 1.1） */
+   v2.9.0 デザイン「ブルー・プロ」：深い紺から鮮やかな青へのグラデーション、斜体の細長い数字、半透明の枠。
+   数字は Barlow Condensed（fonts/ に同梱。SIL OFL 1.1） */
 
 @font-face { font-family: "Barlow Condensed"; font-weight: 600; font-style: normal; font-display: swap; src: url("../fonts/barlow-condensed-latin-600-normal.woff2") format("woff2"); }
 @font-face { font-family: "Barlow Condensed"; font-weight: 700 900; font-style: normal; font-display: swap; src: url("../fonts/barlow-condensed-latin-700-normal.woff2") format("woff2"); }
@@ -8,35 +8,30 @@
 
 :root {
   color-scheme: light;
-  --bg: #eceef1;            /* コンクリートの灰 */
-  --surface-1: #ffffff;     /* レーンの白 */
-  --surface-2: #f3f4f6;
-  --border: #d9dde3;
-  --text-primary: #141a24;
-  --text-secondary: #485263;
-  --text-muted: #687284;
-  --grid: #e2e5ea;
-  --accent: #b83a2e;        /* トラックの赤 */
-  --accent-strong: #962e24;
+  --bg: #edf1f7;
+  --surface-1: #ffffff;
+  --surface-2: #f1f4f9;
+  --border: #dbe2ec;
+  --text-primary: #0b1324;
+  --text-secondary: #46526a;
+  --text-muted: #6a7489;
+  --grid: #e3e8f0;
+  --accent: #2563eb;
+  --accent-strong: #1d4ed8;
   --accent-ink: #ffffff;
-  --accent-soft: #f7e4e1;
-  --asphalt: #1b2230;       /* アスファルトの紺（上下のバー） */
-  --asphalt-2: #262f40;
-  --asphalt-text: #e9ecf1;
-  --asphalt-muted: #9aa3b2;
-  --track: #b83a2e;
-  --track-line: #ffffff;
-  --danger: #9c1f4a;        /* 削除などは赤と区別できる赤紫 */
-  --danger-soft: #f8e3ea;
-  --warn-soft: #fbf0d9;
+  --accent-soft: #e2eafd;
+  --danger: #c93a39;
+  --danger-soft: #fbe9e9;
+  --warn-soft: #fdf3dc;
   --warn-ink: #6b4a00;
-  --gold: #d99a1e;          /* メダルの金 */
-  --series-1: #2f5d9e;      /* ジョギング：レーンの青 */
-  --series-2: #b83a2e;      /* 筋トレ：トラックの赤 */
-  --hero-grad: none;
-  --btn-grad: var(--accent);
-  --shadow: none;
-  --radius: 12px;
+  --gold: #f2b01e;
+  --series-1: #2563eb; /* ジョギング・主系列 */
+  --series-2: #f0642a; /* 筋トレ・副系列 */
+  --glow: #5cc8ff;
+  --hero-grad: linear-gradient(140deg, #050d24 0%, #0b2a66 48%, #1f5fe0 100%);
+  --btn-grad: linear-gradient(135deg, #2f7bff 0%, #1d4ed8 100%);
+  --shadow: 0 1px 2px rgb(11 19 36 / 0.04), 0 8px 24px -12px rgb(11 19 36 / 0.12);
+  --radius: 18px;
   --tabbar-h: 66px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --font: system-ui, -apple-system, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", Meiryo, sans-serif;
@@ -46,56 +41,50 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #10141b;
-    --surface-1: #181e28;
-    --surface-2: #202835;
-    --border: #2b3445;
-    --text-primary: #eceff4;
-    --text-secondary: #b6becb;
-    --text-muted: #8b95a6;
-    --grid: #252e3d;
-    --accent: #e0675a;
-    --accent-strong: #ec8679;
+    --bg: #070b14;
+    --surface-1: #0f1626;
+    --surface-2: #162036;
+    --border: #1f2b45;
+    --text-primary: #eef3fb;
+    --text-secondary: #b1bccf;
+    --text-muted: #8691a8;
+    --grid: #1c2740;
+    --accent: #4f8cff;
+    --accent-strong: #79a7ff;
     --accent-ink: #ffffff;
-    --accent-soft: #3a2120;
-    --asphalt: #0b0e14;
-    --asphalt-2: #161b25;
-    --track: #a8382d;
-    --track-line: #e9ecf1;
-    --danger: #f0779e;
-    --danger-soft: #3a1b27;
+    --accent-soft: #14254a;
+    --danger: #e66767;
+    --danger-soft: #361b1f;
     --warn-soft: #362c16;
     --warn-ink: #f2d9a0;
-    --gold: #f0b23a;
-    --series-1: #6b97d6;
-    --series-2: #e0675a;
+    --gold: #f5bd3a;
+    --series-1: #4f8cff;
+    --series-2: #ff7a45;
+    --shadow: 0 0 0 1px rgb(255 255 255 / 0.02);
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #10141b;
-  --surface-1: #181e28;
-  --surface-2: #202835;
-  --border: #2b3445;
-  --text-primary: #eceff4;
-  --text-secondary: #b6becb;
-  --text-muted: #8b95a6;
-  --grid: #252e3d;
-  --accent: #e0675a;
-  --accent-strong: #ec8679;
+  --bg: #070b14;
+  --surface-1: #0f1626;
+  --surface-2: #162036;
+  --border: #1f2b45;
+  --text-primary: #eef3fb;
+  --text-secondary: #b1bccf;
+  --text-muted: #8691a8;
+  --grid: #1c2740;
+  --accent: #4f8cff;
+  --accent-strong: #79a7ff;
   --accent-ink: #ffffff;
-  --accent-soft: #3a2120;
-  --asphalt: #0b0e14;
-  --asphalt-2: #161b25;
-  --track: #a8382d;
-  --track-line: #e9ecf1;
-  --danger: #f0779e;
-  --danger-soft: #3a1b27;
+  --accent-soft: #14254a;
+  --danger: #e66767;
+  --danger-soft: #361b1f;
   --warn-soft: #362c16;
   --warn-ink: #f2d9a0;
-  --gold: #f0b23a;
-  --series-1: #6b97d6;
-  --series-2: #e0675a;
+  --gold: #f5bd3a;
+  --series-1: #4f8cff;
+  --series-2: #ff7a45;
+  --shadow: 0 0 0 1px rgb(255 255 255 / 0.02);
 }
 
 * { box-sizing: border-box; }
@@ -253,7 +242,7 @@ button, input, select { font: inherit; color: inherit; }
 .field { display: grid; gap: 4px; }
 .field-label { font-size: 12px; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.04em; }
 .field-hint { font-size: 12px; color: var(--text-muted); }
-input[type="text"], input[type="number"], input[type="date"], input[type="time"], select {
+input[type="text"], input[type="password"], input[type="number"], input[type="date"], input[type="time"], select {
   width: 100%; min-height: 52px; padding: 10px 14px;
   border: 1px solid var(--border); border-radius: 12px;
   background: var(--surface-2); font-size: 17px;
@@ -724,105 +713,59 @@ input[type="date"]::-webkit-date-and-time-value { text-align: left; }
 .card .notify-title:not(:first-of-type) { margin-top: 18px; }
 
 /* ==========================================================
-   v2.8.0 デザイン「陸上トラック」：部品の見た目（上の規則を上書きする）
+   v2.9.0 デザイン「ブルー・プロ」：部品の見た目（上の規則を上書きする）
    ========================================================== */
 
-/* 上部バー：アスファルトの紺。ロゴは斜体の細長い書体 */
-.appbar { background: var(--asphalt); border-bottom: 3px solid var(--track); color: var(--asphalt-text); backdrop-filter: none; -webkit-backdrop-filter: none; }
-.brand { font-size: 15px; font-weight: 800; letter-spacing: 0.06em; color: var(--asphalt-text); }
-.appbar h1 { color: #fff; font-size: 21px; }
-.clock-date { color: var(--asphalt-muted); }
-.clock-time { color: #fff; font-size: 30px; font-weight: 700; letter-spacing: 0; }
-.clock-time small { color: var(--asphalt-muted); font-size: 15px; }
-.sync-indicator { color: var(--asphalt-muted); }
-.sync-indicator[data-status="ok"], .sync-indicator[data-status="syncing"] svg, .sync-indicator[data-status="pending"] svg { color: #fff; }
-.sync-indicator[data-status="ok"] svg { fill: rgb(255 255 255 / 0.18); }
-.sync-indicator[data-status="error"], .sync-indicator[data-status="off"] { color: #ff9a8e; }
+/* 上部バー・下部タブ：明るい半透明（画面になじむ）。選択中のタブは青 */
+.brand { font-size: 13px; letter-spacing: 0.22em; color: var(--text-muted); }
+.clock-time { font-size: 30px; font-weight: 700; font-style: italic; letter-spacing: 0; }
+.clock-time small { font-size: 15px; }
+.tab.active::before { width: 28px; height: 3px; }
 
-/* 下部タブ：紺の地に白。選んでいるタブの上に赤い線（レーンの印） */
-.tabbar { background: var(--asphalt); border-top: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
-.tab { color: var(--asphalt-muted); }
-.tab.active { color: #fff; }
-.tab.active::before { width: 34px; height: 4px; border-radius: 0; background: var(--track); }
+/* 数字は斜体の細長い書体 */
+.stat-value { font-size: 26px; font-weight: 700; font-style: italic; letter-spacing: 0.01em; }
+.meter-head strong, .estimate-head strong { font-size: 24px; font-weight: 700; font-style: italic; }
+.card-title { font-size: 16px; }
 
-/* カード：影なし・角は控えめ。見出しの印はなくし、太さで区切る */
-.card { border-radius: var(--radius); box-shadow: none; }
-.card-title { font-size: 16px; letter-spacing: 0; }
-.card-title::before { display: none; }
-.stat { border-radius: 8px; }
-.stat-value { font-size: 27px; font-weight: 700; letter-spacing: 0.01em; }
-.meter-head strong, .estimate-head strong { font-size: 24px; font-weight: 700; }
-
-/* ボタン：塗りつぶしの赤。グラデーションと影はなし */
-.btn { border-radius: 10px; }
-.btn-primary { background: var(--accent); box-shadow: none; }
-.btn-primary:hover { filter: none; background: var(--accent-strong); }
-.seg.active { color: var(--text-primary); box-shadow: inset 0 -3px 0 var(--accent); border-radius: 8px 8px 2px 2px; }
-.period-row .seg.active { background: var(--asphalt); color: #fff; }
-
-/* ホーム：ゼッケン（今の体重）。白い布に赤い帯、四隅に安全ピンの穴 */
+/* ホーム：今の体重（深い紺から青へのグラデーション、斜めの線、半透明の枠） */
 .hero-card.bib {
-  margin: 6px 4px 14px; padding: 0 20px 18px;
-  border-radius: 6px; color: #141a24;
-  background: #fbfbfa; border: 1px solid #d5d9df;
-  box-shadow: 0 1px 0 #c9ced6, 0 10px 24px -14px rgb(20 26 36 / 0.45);
+  margin: 6px 0 14px; padding: 18px 20px 16px; border-radius: 22px; color: #fff;
+  background: var(--hero-grad); box-shadow: 0 18px 40px -18px rgb(10 40 110 / 0.75);
 }
-.hero-card.bib::after { display: none; }
-.bib-band {
-  position: relative; display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
-  margin: 0 -20px 4px; padding: 12px 34px 10px;
-  background: var(--track); color: #fff;
-}
-.bib-brand { font-family: var(--font-num); font-style: italic; font-weight: 800; font-size: 26px; letter-spacing: 0.08em; line-height: 1; }
-.bib-note { font-size: 12px; font-weight: 600; opacity: 0.9; }
-.bib-pin { position: absolute; width: 9px; height: 9px; border-radius: 50%; background: var(--bg); box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.35); }
-.bib-pin.tl { left: 12px; top: 10px; } .bib-pin.tr { right: 12px; top: 10px; }
-.bib-pin.bl, .bib-pin.br { display: none; }
-.hero-card.bib .hero { justify-content: center; margin: 6px 0 10px; }
-.hero-card.bib .hero-value { font-size: 104px; font-weight: 800; letter-spacing: -0.01em; text-shadow: none; color: #141a24; }
-.hero-card.bib .hero-unit { font-family: var(--font-num); font-size: 28px; font-weight: 700; color: #485263; opacity: 1; }
-.hero-card.bib .hero-stats { grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 0; border-top: 2px solid #141a24; }
-.hero-card.bib .hero-stat { background: none; border: 0; border-radius: 0; backdrop-filter: none; padding: 8px 10px 0; text-align: center; }
-.hero-card.bib .hero-stat + .hero-stat { border-left: 1px solid #d5d9df; }
-.hero-card.bib .hero-stat-label { color: #485263; opacity: 1; }
-.hero-card.bib .hero-stat-value { font-size: 26px; font-weight: 700; color: #141a24; }
-.hero-card.bib .hero-stat-sub { color: #687284; opacity: 1; }
-.hero-card.bib .hero-headline { margin: 14px 0 4px; color: #141a24; }
-.hero-card.bib .hero-text { color: #485263; opacity: 1; }
+.hero-card.bib::after { right: -50px; top: -70px; width: 240px; height: 240px; background: repeating-linear-gradient(120deg, rgb(255 255 255 / 0.10) 0 2px, transparent 2px 13px); }
+.bib-band { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 0 0 2px; position: relative; z-index: 1; }
+.bib-brand { font-family: var(--font-num); font-size: 13px; font-weight: 800; letter-spacing: 0.24em; color: #8fc0ff; }
+.bib-note { font-size: 12px; font-weight: 600; color: rgb(255 255 255 / 0.75); }
+.bib-pin { display: none; }
+.hero-card.bib .hero { margin: 0 0 12px; position: relative; z-index: 1; }
+.hero-card.bib .hero-value { font-size: 92px; font-weight: 800; font-style: italic; letter-spacing: -0.02em; line-height: 0.95; text-shadow: 0 2px 18px rgb(80 160 255 / 0.35); }
+.hero-card.bib .hero-unit { font-family: var(--font-num); font-size: 26px; font-style: italic; font-weight: 700; color: rgb(255 255 255 / 0.75); opacity: 1; }
+.hero-card.bib .hero-stat { border-radius: 14px; background: rgb(255 255 255 / 0.10); border: 1px solid rgb(255 255 255 / 0.16); }
+.hero-card.bib .hero-stat-value { font-size: 24px; font-weight: 700; font-style: italic; }
+.hero-card.bib .hero-headline { margin: 10px 0 4px; }
 
-/* ホーム：記録ボタン。上に種類の色の線 */
-.quick-btn { border-radius: var(--radius); box-shadow: none; border-top-width: 4px; }
-.quick-weight { border-top-color: var(--asphalt); }
-.quick-strength { border-top-color: var(--series-2); }
-.quick-jog { border-top-color: var(--series-1); }
-.quick-plus { box-shadow: none !important; background: none !important; color: var(--text-primary) !important; font-family: var(--font-num); font-size: 34px !important; font-weight: 600; }
-.quick-strength .quick-plus { color: var(--series-2) !important; }
-.quick-jog .quick-plus { color: var(--series-1) !important; }
+/* ホーム：記録ボタン（種類ごとの色の四角に「＋」） */
+.quick-plus { width: 44px; height: 44px; border-radius: 14px; font-family: var(--font-num); font-size: 28px; }
 
-/* 目標：400m トラック */
-.track-box { margin: 2px 0 12px; }
+/* 目標：トラック（夜の青い競技場に光る軌跡） */
+.track-box { margin: 2px 0 12px; padding: 10px 6px; border-radius: 18px; background: linear-gradient(160deg, #061232, #0d2d6b); }
 .track-svg { display: block; width: 100%; height: auto; max-height: 220px; overflow: visible; }
-.tk-line { fill: none; stroke: var(--track-line); }
-.tk-lane { fill: none; stroke: var(--track); }
-.tk-finish { stroke: var(--track-line); stroke-width: 3; }
-.tk-trail { fill: none; stroke: var(--gold); stroke-width: 5; stroke-linecap: round; }
-.tk-runner { fill: var(--asphalt); stroke: #fff; stroke-width: 3; }
-.tk-title { font-size: 13px; font-weight: 700; fill: var(--text-secondary); }
-.tk-value { font-family: var(--font-num); font-size: 30px; font-weight: 700; fill: var(--text-primary); }
-.tk-sub { font-size: 11px; fill: var(--text-muted); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tk-runner { fill: #fff; stroke: var(--asphalt); } }
-:root[data-theme="dark"] .tk-runner { fill: #fff; stroke: var(--asphalt); }
+.tk-line { fill: none; stroke: rgb(140 190 255 / 0.55); }
+.tk-lane { fill: none; stroke: #12306a; }
+.tk-finish { stroke: #ffffff; stroke-width: 3; }
+.tk-trail { fill: none; stroke: var(--glow); stroke-width: 4; stroke-linecap: round; filter: drop-shadow(0 0 4px var(--glow)); }
+.tk-runner { fill: #ffffff; stroke: var(--glow); stroke-width: 3; filter: drop-shadow(0 0 6px var(--glow)); }
+.tk-title, .tk-sub { fill: rgb(220 232 255 / 0.8); }
+.tk-title { font-size: 13px; font-weight: 700; }
+.tk-sub { font-size: 11px; }
+.tk-value { font-family: var(--font-num); font-size: 30px; font-weight: 700; font-style: italic; fill: #ffffff; }
 
-/* 今週の運動・カレンダー：連続達成の帯も紺に */
-.streak-card { background: var(--asphalt) !important; box-shadow: none !important; border-left: 6px solid var(--track); }
-.wk-badge { background: var(--gold); box-shadow: none; }
+/* 入力中の自動計算の表示 */
+.live { border-left: 4px solid var(--accent); border-radius: 8px; }
+/* 獲得済みのバッジは金色で（達成を表す色） */
+.badge-tile.earned { background: color-mix(in srgb, var(--gold) 16%, var(--surface-1)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 45%, transparent); }
 
 @media (max-width: 380px) {
-  .hero-card.bib .hero-value { font-size: 88px; }
+  .hero-card.bib .hero-value { font-size: 80px; }
   .clock-time { font-size: 26px; }
 }
-
-/* 入力中の自動計算の表示は、エラーに見えないよう中立の色に */
-.live { background: var(--surface-2); color: var(--text-primary); border-left: 4px solid var(--series-1); border-radius: 6px; }
-/* 獲得済みのバッジはメダルの金で（達成を表す色） */
-.badge-tile.earned { background: color-mix(in srgb, var(--gold) 16%, var(--surface-1)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 45%, transparent); }

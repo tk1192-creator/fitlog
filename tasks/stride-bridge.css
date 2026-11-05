@@ -365,74 +365,48 @@ html.in-stride .s-summary-done .summary-icon { color: var(--status-done-fg); }
 html.in-stride .s-summary-done[aria-pressed="true"] { background: var(--status-done-bg); }
 
 /* ==========================================================
-   v2.8.0 デザイン「陸上トラック」（STRIDE の css/style.css と同じ配色）
+   v2.9.0 デザイン「ブルー・プロ」（STRIDE の css/style.css と同じ配色）
    ========================================================== */
 @font-face { font-family: "Barlow Condensed"; font-weight: 600; font-style: normal; font-display: swap; src: url("../fonts/barlow-condensed-latin-600-normal.woff2") format("woff2"); }
 @font-face { font-family: "Barlow Condensed"; font-weight: 700 900; font-style: normal; font-display: swap; src: url("../fonts/barlow-condensed-latin-700-normal.woff2") format("woff2"); }
 @font-face { font-family: "Barlow Condensed"; font-weight: 700 900; font-style: italic; font-display: swap; src: url("../fonts/barlow-condensed-latin-700-italic.woff2") format("woff2"); }
 
 html.in-stride {
-  --color-bg: #eceef1;
-  --color-surface-muted: #f3f4f6;
-  --color-border: #d9dde3;
-  --color-text: #141a24;
-  --color-text-muted: #485263;
-  --color-text-subtle: #687284;
-  --color-ink: #1b2230;
-  --color-primary: #b83a2e;
-  --color-primary-hover: #962e24;
-  --color-primary-soft: #f7e4e1;
-  --color-primary-ring: rgba(184, 58, 46, 0.3);
-  --color-danger: #9c1f4a;
-  --color-danger-hover: #7e183c;
-  --color-danger-soft: #f8e3ea;
-  --radius-md: 10px;
-  --radius-lg: 12px;
-  --shadow-md: none;
-  --stride-btn: #b83a2e;
-  --stride-asphalt: #1b2230;
-  --stride-asphalt-muted: #9aa3b2;
-  --stride-track: #b83a2e;
+  --color-bg: #edf1f7;
+  --color-surface-muted: #f1f4f9;
+  --color-border: #dbe2ec;
+  --color-text: #0b1324;
+  --color-text-muted: #46526a;
+  --color-text-subtle: #6a7489;
+  --color-ink: #0b2a66;
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-soft: #e2eafd;
+  --color-primary-ring: rgba(37, 99, 235, 0.3);
+  --stride-btn: linear-gradient(135deg, #2f7bff 0%, #1d4ed8 100%);
   --stride-font-num: "Barlow Condensed", "SF Pro Display", "Segoe UI", system-ui, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   html.in-stride {
-    --color-bg: #10141b;
-    --color-surface: #181e28;
-    --color-surface-muted: #202835;
-    --color-border: #2b3445;
-    --color-text: #eceff4;
-    --color-text-muted: #b6becb;
-    --color-text-subtle: #8b95a6;
-    --color-ink: #0b0e14;
-    --color-primary: #e0675a;
-    --color-primary-hover: #ec8679;
-    --color-primary-soft: #3a2120;
-    --color-primary-ring: rgba(224, 103, 90, 0.35);
-    --color-danger: #f0779e;
-    --color-danger-hover: #f597b6;
-    --color-danger-soft: #3a1b27;
-    --stride-btn: #e0675a;
-    --stride-asphalt: #0b0e14;
-    --stride-track: #a8382d;
+    --color-bg: #070b14;
+    --color-surface: #0f1626;
+    --color-surface-muted: #162036;
+    --color-border: #1f2b45;
+    --color-text: #eef3fb;
+    --color-text-muted: #b1bccf;
+    --color-text-subtle: #8691a8;
+    --color-ink: #050d24;
+    --color-primary: #4f8cff;
+    --color-primary-hover: #79a7ff;
+    --color-primary-soft: #14254a;
+    --color-primary-ring: rgba(79, 140, 255, 0.35);
+    --stride-btn: linear-gradient(135deg, #4f8cff 0%, #2563eb 100%);
   }
 }
-
-/* 上部バー・下部タブ：アスファルトの紺 */
-.s-appbar { background: var(--stride-asphalt); color: #fff; border-bottom: 3px solid var(--stride-track); backdrop-filter: none; -webkit-backdrop-filter: none; }
-.s-brand { font-size: 15px; letter-spacing: 0.06em; color: #e9ecf1; }
-.s-title { color: #fff; font-size: 21px; }
-.s-clock-date { color: var(--stride-asphalt-muted); }
-.s-clock-time { color: #fff; font-size: 30px; font-weight: 700; letter-spacing: 0; }
-.s-clock-time small { color: var(--stride-asphalt-muted); font-size: 15px; }
-.stride-tabbar { background: var(--stride-asphalt); border-top: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
-.stride-tab { color: var(--stride-asphalt-muted); }
-.stride-tab.active { color: #fff; }
-.stride-tab.active::before { width: 34px; height: 4px; border-radius: 0; background: var(--stride-track); }
-
-/* ボタン：塗りつぶしの赤。グラデーションと影はなし */
-html.in-stride .btn { border-radius: 10px; }
-html.in-stride .btn-primary, html.in-stride .btn-primary:hover { background: var(--stride-btn); box-shadow: none; filter: none; }
-.s-fab { background: var(--stride-btn); box-shadow: 0 6px 16px rgba(20, 26, 36, 0.35); }
-html.in-stride .summary-value { font-family: var(--stride-font-num); font-weight: 700; letter-spacing: 0; font-size: 28px; }
+.s-brand { font-size: 13px; letter-spacing: 0.22em; }
+.s-clock-time { font-size: 30px; font-weight: 700; font-style: italic; letter-spacing: 0; }
+.s-clock-time small { font-size: 15px; }
+html.in-stride .btn-primary { box-shadow: 0 6px 16px -6px rgba(37, 99, 235, 0.7); }
+.s-fab { box-shadow: 0 10px 24px -6px rgba(37, 99, 235, 0.6), 0 2px 6px rgba(0, 0, 0, 0.15); }
+html.in-stride .summary-value { font-family: var(--stride-font-num); font-weight: 700; font-style: italic; letter-spacing: 0; font-size: 28px; }
 @media (max-width: 400px) { .s-clock-time { font-size: 26px; } }
