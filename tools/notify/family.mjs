@@ -25,9 +25,20 @@ async function readJSON(path) {
 }
 
 // 今回の push で追加されたメッセージのファイル
+// アプリは GitHub の API でファイルを置くため、push の情報（commits[].added）には追加したファイルが入らないことがある。
+// そこで、コミットごとに GitHub に詳細を問い合わせて、追加されたファイルを調べる。
 const event = JSON.parse(readFileSync(process.env.EVENT_PATH, 'utf8'));
+const MSG_RE = /^messages\/\d{4}-\d{2}\/[\w.-]+\.json$/;
 const added = new Set();
-for (const c of event.commits || []) for (const p of c.added || []) if (/^messages\/\d{4}-\d{2}\/[\w.-]+\.json$/.test(p)) added.add(p);
+const shas = new Set([...(event.commits || []).map((c) => c.id), event.head_commit && event.head_commit.id].filter(Boolean));
+for (const sha of shas) {
+  const r = await fetch(`https://api.github.com/repos/${repo}/commits/${sha}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' },
+  });
+  if (!r.ok) { console.log(`コミット ${sha.slice(0, 7)} を読めませんでした（${r.status}）`); continue; }
+  for (const f of (await r.json()).files || []) if (f.status === 'added' && MSG_RE.test(f.filename)) added.add(f.filename);
+}
+console.log(`追加されたメッセージ ${added.size} 件`);
 const messages = [];
 for (const p of added) {
   const m = await readJSON(p);
