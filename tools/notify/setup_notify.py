@@ -10,7 +10,10 @@
   3. 公開鍵を notify/vapid-public.txt に置く（アプリが通知を登録するときに読む。公開してよい値）
   4. 送信の仕組み（.github/workflows/remind.yml と .github/scripts/remind.mjs）を置く
 
-もう一度実行すると鍵が作り直され、その端末では通知の登録をやり直す必要がある（設定画面で「止める」→「受け取る」）。
+2 回目以降は、鍵はそのまま（作り直さない）で、送信の仕組みだけを最新にする。
+鍵を作り直したいときだけ --rotate を付ける。作り直すと、各端末で通知の登録をやり直す必要がある
+（設定画面で「この端末の通知を止める」→「この端末で通知を受け取る」）。
+    python tools/notify/setup_notify.py --rotate tk1192-creator/stride-backup
 必要なもの: Python 3、cryptography（pip install cryptography）、gh（repo・workflow の権限）
 """
 import base64
@@ -52,8 +55,18 @@ def put_file(repo: str, path: str, text: str, message: str):
     gh("api", "-X", "PUT", f"repos/{repo}/contents/{path}", "--input", "-", input_text=json.dumps(body))
 
 
+def has_file(repo: str, path: str) -> bool:
+    try:
+        gh("api", f"repos/{repo}/contents/{path}")
+        return True
+    except RuntimeError:
+        return False
+
+
 def main():
-    repos = sys.argv[1:]
+    args = sys.argv[1:]
+    rotate = "--rotate" in args
+    repos = [a for a in args if a != "--rotate"]
     if not repos or any("/" not in r for r in repos):
         print(__doc__)
         sys.exit(1)
@@ -61,6 +74,12 @@ def main():
         info = json.loads(gh("api", f"repos/{repo}"))
         if not info.get("private"):
             print(f"{repo}: 公開リポジトリのため中止しました（非公開のリポジトリを指定してください）")
+            continue
+        # すでに鍵がある場合は作り直さない（作り直すと、登録済みの端末に通知が届かなくなるため）
+        if has_file(repo, "notify/vapid-public.txt") and not rotate:
+            for dest, src in FILES.items():
+                put_file(repo, dest, src.read_text(encoding="utf-8"), "STRIDE 入力忘れのお知らせの仕組みを更新")
+            print(f"{repo}: 鍵はそのままで、送信の仕組みだけを更新しました（鍵を作り直すときは --rotate）")
             continue
         key = ec.generate_private_key(ec.SECP256R1())
         priv = b64url(key.private_numbers().private_value.to_bytes(32, "big"))

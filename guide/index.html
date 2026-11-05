@@ -325,6 +325,7 @@
   <ol class="steps">
     <li>パソコンで、STRIDE のプログラムのフォルダ（<code>fitlog</code>）を開いた PowerShell で、次を実行します（保存先を並べて指定）。<br><code>python tools/notify/setup_notify.py tk1192-creator/stride-○○ tk1192-creator/stride-△△</code></li>
     <li>「準備しました」と出れば完了です。各保存先に、通知を送る仕組み（毎日 21 時ごろに動く）と、通知用の鍵が設定されます（秘密鍵は GitHub の「シークレット」に保存され、画面には出ません）。</li>
+    <li>家族を追加したときなどにもう一度実行しても、すでに準備済みの保存先の鍵は作り直しません（送信の仕組みだけ更新）。鍵を作り直すと、各端末で通知の登録（止める → 受け取る）のやり直しが必要です。</li>
     <li>家族に、手順 8 で「この端末で通知を受け取る」を押してもらいます。</li>
     <li>テスト通知を送るとき：<code>gh workflow run remind.yml -R tk1192-creator/stride-○○ -f test=true</code></li>
   </ol>

@@ -78,7 +78,9 @@ for (const f of subs) {
     delivered++;
     console.log(`${data.device || '端末'}（${f.name}）: 送信しました`);
   } catch (e) {
-    console.log(`${data.device || '端末'}（${f.name}）: 送信できませんでした（${e.statusCode || e.message}）`);
+    // 理由（Apple・Google の通知サーバーが返す説明）もログに出す。秘密の値は含まれない
+    const reason = typeof e.body === 'string' ? e.body.slice(0, 300) : '';
+    console.log(`${data.device || '端末'}（${f.name}）: 送信できませんでした（${e.statusCode || e.message}）${reason ? ` 理由: ${reason}` : ''}`);
     // 404・410 は、端末側で通知が無効になった（アプリの削除など）。購読情報を消す
     if (e.statusCode === 404 || e.statusCode === 410) {
       await api(`notify/${f.name}`, {
