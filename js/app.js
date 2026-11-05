@@ -50,6 +50,7 @@ const app = {
 
   /** タブを切り替える。params はその画面に渡す指定（例: {type: 'jog'}） */
   navigate(tab, params = {}) {
+    this.navCount = (this.navCount || 0) + 1; // 画面を切り替えた回数（カレンダーのシートを閉じる判定に使う）
     this.current = tab;
     this.params = params;
     document.querySelectorAll('.tab[data-tab]').forEach((b) => {
@@ -68,6 +69,7 @@ const app = {
     const root = document.getElementById('view');
     const view = VIEWS[this.current];
     if (view.unmount) view.unmount();
+    document.body.classList.remove('sheet-open'); // シートを開いている画面が、開き直すときにまた付ける
     root.replaceChildren();
     view.render(root, this, this.params);
     this.params = {};

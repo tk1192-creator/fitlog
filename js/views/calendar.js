@@ -11,14 +11,22 @@ import { TASK_STATUS_LABEL, loadTasks, tasksByDue } from './home-tasks.js';
 const WD = ['月', '火', '水', '木', '金', '土', '日'];
 
 // 画面をまたいで保持する状態（表示中の月 "YYYY-MM" と選択中の日付）
-const state = { month: null, selected: null };
+const state = { month: null, selected: null, sheetOpen: false, sheetNav: null, sheetFocus: false };
+
+/** その日のシート（記録・予定・タスク）を開く */
+function openSheet(app, date) {
+  state.selected = date;
+  state.month = date.slice(0, 7);
+  state.sheetOpen = true;
+  state.sheetNav = app.navCount;
+  state.sheetFocus = true;
+}
 
 export function render(root, app, params = {}) {
   const today = todayStr();
   // ホームなどから日付を指定して開かれたとき（1 回だけ使う）
   if (params.date) {
-    state.selected = params.date;
-    state.month = params.date.slice(0, 7);
+    openSheet(app, params.date);
     delete params.date;
   }
   if (!state.month) state.month = today.slice(0, 7);
@@ -114,7 +122,7 @@ export function render(root, app, params = {}) {
       row.append(h('button', {
         type: 'button', class: cls.join(' '), role: 'gridcell',
         'aria-label': `${fmtDateLong(d)} ${what}`, 'aria-selected': String(d === state.selected),
-        onclick: () => { state.selected = d; app.render(); },
+        onclick: () => { openSheet(app, d); app.render(); },
       },
       h('span', { class: 'cal-num', text: String(Number(d.slice(8))) }),
       h('span', { class: 'marks' },
@@ -143,6 +151,31 @@ export function render(root, app, params = {}) {
   root.append(card);
 
   root.append(dayDetail(app, state.selected, today, taskMap.get(state.selected) || []));
+
+  // 日付を押したときのシート（別の画面に移ったら閉じる）
+  if (state.sheetOpen && state.sheetNav === app.navCount) {
+    root.append(daySheet(app, state.selected, today, taskMap.get(state.selected) || []));
+  } else {
+    state.sheetOpen = false;
+  }
+}
+
+/** その日の記録・予定・タスクを、画面の下から出るシートで表示する */
+function daySheet(app, date, today, tasks) {
+  const close = () => { state.sheetOpen = false; app.render(); };
+  const closeBtn = h('button', { type: 'button', class: 'sheet-close', 'aria-label': '閉じる', text: '×', onclick: close });
+  const panel = h('div', { class: `sheet${state.sheetFocus ? ' enter' : ''}`, role: 'dialog', 'aria-modal': 'true', 'aria-label': `${fmtDateLong(date)} の記録・予定・タスク` },
+    h('div', { class: 'sheet-head' }, h('span', { class: 'sheet-grip', 'aria-hidden': 'true' }), closeBtn),
+    dayDetail(app, date, today, tasks),
+  );
+  const backdrop = h('div', { class: 'sheet-backdrop', onclick: (e) => { if (e.target === backdrop) close(); } }, panel);
+  backdrop.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+  document.body.classList.add('sheet-open');
+  if (state.sheetFocus) {
+    state.sheetFocus = false;
+    requestAnimationFrame(() => closeBtn.focus({ preventScroll: true }));
+  }
+  return backdrop;
 }
 
 /** 選択した日の記録 */
