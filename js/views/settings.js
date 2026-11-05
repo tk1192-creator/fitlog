@@ -2,13 +2,79 @@
 import { ACTIVITY_LEVELS, daysBetween, todayStr } from '../calc.js';
 import { defaultData, exportCSV, exportJSON, normalize } from '../storage.js';
 import { generateSample } from '../sample.js';
-import { clearAllTasks, loadTasks } from './home-tasks.js';
+import { clearAllTasks, clearDoneTasks, countDoneTasks, exportTasksJSON, loadTasks } from './home-tasks.js';
 import { confirmDialog, field, fmtDateLong, h, toast } from '../ui.js';
 
 const BACKUP_REMIND_DAYS = 14;
+const TASK_IMPORT_KEY = 's-task-import'; // タスク画面へ渡すインポート用ファイル（sessionStorage）
+const TASK_IMPORT_MAX = 4 * 1024 * 1024; // sessionStorage に収まる大きさ（目安）
 
 export function render(root, app) {
-  root.append(profileCard(app), exerciseCard(app), lockCard(app), dataCard(app), dangerCard(app), aboutCard());
+  root.append(profileCard(app), exerciseCard(app), lockCard(app), dataCard(app), taskDataCard(app), dangerCard(app), aboutCard());
+}
+
+/* ---------- タスクのデータ（タスク画面の「バックアップ・補助操作」を移したもの） ---------- */
+
+/** タスク画面を開いて、Task Board 本体の機能（CSV・予定表など）を実行する */
+function runOnTaskPage(action) {
+  location.href = `./tasks/#do=${action}`;
+}
+
+function taskDataCard(app) {
+  const fileInput = h('input', { type: 'file', accept: 'application/json,.json', class: 'visually-hidden', 'aria-label': 'タスクのバックアップファイルを選ぶ' });
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files[0];
+    fileInput.value = '';
+    if (!file) return;
+    if (file.size > TASK_IMPORT_MAX) {
+      toast('ファイルが大きすぎます（4MB まで）');
+      return;
+    }
+    try {
+      sessionStorage.setItem(TASK_IMPORT_KEY, JSON.stringify({ name: file.name, type: file.type || 'application/json', text: await file.text() }));
+    } catch (_) {
+      toast('ファイルを読み込めませんでした');
+      return;
+    }
+    // 中身の確認と置き換えの確認は、タスク画面（Task Board 本体）で行う
+    runOnTaskPage('import');
+  });
+
+  const tasks = loadTasks();
+  const count = tasks === null ? '-' : tasks.length;
+  const btn = (text, onclick, cls = 'btn') => h('button', { type: 'button', class: cls, text, onclick });
+
+  return h('section', { class: 'card' },
+    h('h2', { class: 'card-title', text: 'タスクのデータ' }),
+    h('p', { class: 'card-note', text: `タスク ${count} 件。タスクのデータもこの端末の中だけに保存されています。機種変更や PC への受け渡しには JSON を使ってください。` }),
+    h('div', { class: 'btn-grid' },
+      btn('JSON をエクスポート', () => {
+        const n = exportTasksJSON();
+        toast(n === null ? 'タスクのデータを読み取れませんでした' : `タスク ${n} 件をエクスポートしました`);
+      }, 'btn btn-primary'),
+      btn('JSON をインポート', () => fileInput.click()),
+      btn('CSV（Excel）で出力', () => runOnTaskPage('csv')),
+      btn('予定表（.ics）で出力', () => runOnTaskPage('ics')),
+      btn('テンプレートの管理', () => runOnTaskPage('templates')),
+      btn('サンプルタスクを追加', () => runOnTaskPage('sample')),
+      btn('完了したタスクを削除', async () => {
+        const done = countDoneTasks();
+        if (done === null) return toast('タスクのデータを読み取れませんでした');
+        if (!done) return toast('完了したタスクはありません');
+        const ok = await confirmDialog(
+          `完了したタスク ${done} 件を削除します（未完了のタスクは残ります）。\nこの操作は元に戻せません。必要なら先に「JSON をエクスポート」してください。`,
+          { title: '完了したタスクの削除', okText: `${done} 件を削除する`, danger: true },
+        );
+        if (!ok) return;
+        const n = clearDoneTasks();
+        if (n === null) return toast('削除できませんでした');
+        app.render();
+        toast(`完了したタスク ${n} 件を削除しました`);
+      }, 'btn btn-danger'),
+    ),
+    h('p', { class: 'card-note', text: 'インポート・CSV・予定表・テンプレート・サンプルは、タスク画面に切り替わって実行します。CSV と予定表は、タスク画面で表示中（絞り込み中ならその条件）のタスクが対象です（予定表は未完了のみ）。' }),
+    fileInput,
+  );
 }
 
 /* ---------- Face ID でロック（js/lock.js の window.StrideLock を使う） ---------- */

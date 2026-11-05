@@ -87,3 +87,63 @@ export function clearAllTasks() {
     return false;
   }
 }
+
+/**
+ * タスクを JSON ファイルに書き出す（Task Board の「JSONをエクスポート」と同じ形式。元の Task Board・claude.ai 版でも読み込める）
+ * @returns {number|null} 書き出した件数。データを読み取れないときは null
+ */
+export function exportTasksJSON() {
+  let data;
+  try {
+    data = JSON.parse(localStorage.getItem(TASK_KEY) || 'null');
+  } catch (_) {
+    return null;
+  }
+  if (data && !Array.isArray(data.tasks)) return null;
+  const payload = {
+    app: 'task-board',
+    version: data?.version ?? 3,
+    exportedAt: new Date().toISOString(),
+    tasks: data?.tasks ?? [],
+    templates: data?.templates ?? [],
+    settings: data?.settings ?? {},
+  };
+  const d = new Date();
+  const p2 = (n) => String(n).padStart(2, '0');
+  const stamp = `${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}-${p2(d.getHours())}${p2(d.getMinutes())}`;
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `task-board-backup-${stamp}.json`;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return payload.tasks.length;
+}
+
+/** 完了したタスクの件数（読み取れないときは null） */
+export function countDoneTasks() {
+  const tasks = loadTasks();
+  return tasks === null ? null : tasks.filter((t) => t && t.status === 'done').length;
+}
+
+/**
+ * 完了したタスクを削除する。削除したタスクを「先行タスク」にしていた参照も外す
+ * @returns {number|null} 削除した件数。読み取り・保存に失敗したら null
+ */
+export function clearDoneTasks() {
+  try {
+    const data = JSON.parse(localStorage.getItem(TASK_KEY) || 'null');
+    if (!data || !Array.isArray(data.tasks)) return null;
+    const doneIds = new Set(data.tasks.filter((t) => t && t.status === 'done').map((t) => t.id));
+    data.tasks = data.tasks
+      .filter((t) => !doneIds.has(t.id))
+      .map((t) => (t.dependsOn && doneIds.has(t.dependsOn) ? { ...t, dependsOn: '' } : t));
+    localStorage.setItem(TASK_KEY, JSON.stringify(data));
+    return doneIds.size;
+  } catch (_) {
+    return null;
+  }
+}

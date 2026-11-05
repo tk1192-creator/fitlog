@@ -112,63 +112,44 @@
     document.body.append(fab);
   }
 
-  // 4) 「完了したタスクを削除」ボタン（バックアップ・補助操作の欄）
-  //    Task Board 本体はタスクをメモリ上に持っているため、保存データを書き換えてから画面を読み込み直す。
-  const TASK_KEY = 'taskBoard.data';
-  const DONE_MSG_KEY = 's-done-cleared';
-  const backupActions = document.querySelector('.backup-actions');
-  if (backupActions) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'btn btn-danger s-clear-done';
-    btn.innerHTML = '<svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/><path d="m9.5 13 2 2 3.5-4"/></svg>';
-    btn.append('完了したタスクを削除');
-    btn.addEventListener('click', clearDoneTasks);
-    backupActions.append(btn);
+  // 4) 「バックアップ・補助操作」は STRIDE の設定画面（タスクのデータ）に移した。
+  //    この画面の欄は隠し、設定画面から ./tasks/#do=<操作> で開かれたときに、元のボタンの処理を実行する。
+  //    （元のボタンは隠すだけで残すので、Task Board 本体の処理・確認ダイアログをそのまま使える）
+  const IMPORT_KEY = 's-task-import';
+  const actionMatch = location.hash.match(/^#do=([a-z]+)$/);
+  if (actionMatch) {
+    history.replaceState(null, '', location.pathname + location.search);
+    const action = actionMatch[1];
+    const clickById = (id) => { const el = document.getElementById(id); if (el) el.click(); };
+    // Task Board 本体（app.js）の初期化が終わってから実行する
+    setTimeout(() => {
+      if (action === 'csv') clickById('csv-btn');
+      else if (action === 'ics') clickById('ics-btn');
+      else if (action === 'templates') clickById('template-btn');
+      else if (action === 'sample') clickById('sample-btn');
+      else if (action === 'export') clickById('export-btn');
+      else if (action === 'import') importFromSettings();
+    }, 300);
   }
 
-  function readTaskData() {
+  /** 設定画面で選んだファイルを、Task Board 本体のインポート処理（形式の検証・置き換えの確認）に渡す */
+  function importFromSettings() {
+    let item = null;
     try {
-      const data = JSON.parse(localStorage.getItem(TASK_KEY) || 'null');
-      return data && Array.isArray(data.tasks) ? data : null;
-    } catch (_) {
-      return null;
+      item = JSON.parse(sessionStorage.getItem(IMPORT_KEY) || 'null');
+      sessionStorage.removeItem(IMPORT_KEY);
+    } catch (_) { /* 何もしない */ }
+    const input = document.getElementById('import-file');
+    if (!item || !input || typeof DataTransfer === 'undefined') {
+      notify('インポートするファイルを受け取れませんでした。設定画面からもう一度お試しください');
+      return;
     }
+    const file = new File([item.text], item.name || 'task-board-backup.json', { type: item.type || 'application/json' });
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
   }
-
-  async function clearDoneTasks() {
-    const data = readTaskData();
-    if (!data) return notify('タスクのデータを読み取れませんでした');
-    const done = data.tasks.filter((t) => t && t.status === 'done');
-    if (!done.length) return notify('完了したタスクはありません');
-    const ok = await confirmBox(
-      '完了したタスクの削除',
-      `完了したタスク ${done.length} 件を削除します（未完了の ${data.tasks.length - done.length} 件は残ります）。\nこの操作は元に戻せません。必要なら先に「JSONをエクスポート」してください。`,
-      `${done.length} 件を削除する`,
-    );
-    if (!ok) return;
-    const doneIds = new Set(done.map((t) => t.id));
-    data.tasks = data.tasks
-      .filter((t) => !doneIds.has(t.id))
-      // 削除したタスクを「先行タスク」にしていた参照は外す
-      .map((t) => (t.dependsOn && doneIds.has(t.dependsOn) ? { ...t, dependsOn: '' } : t));
-    try {
-      localStorage.setItem(TASK_KEY, JSON.stringify(data));
-    } catch (_) {
-      return notify('保存できませんでした。削除は行っていません');
-    }
-    try { sessionStorage.setItem(DONE_MSG_KEY, String(done.length)); } catch (_) { /* 表示だけなので無視 */ }
-    location.reload();
-  }
-
-  // 読み込み直した後に結果を知らせる
-  try {
-    const n = sessionStorage.getItem(DONE_MSG_KEY);
-    if (n) {
-      sessionStorage.removeItem(DONE_MSG_KEY);
-      setTimeout(() => notify(`完了したタスク ${n} 件を削除しました`), 300);
-    }
-  } catch (_) { /* 何もしない */ }
 
   /** 画面下に短いメッセージを出す */
   function notify(message) {
@@ -180,49 +161,11 @@
     setTimeout(() => el.remove(), 3000);
   }
 
-  /** 確認ダイアログ（ブラウザ標準の confirm は使わない） */
-  function confirmBox(title, message, okText) {
-    return new Promise((resolve) => {
-      const dlg = document.createElement('dialog');
-      dlg.className = 's-confirm';
-      const form = document.createElement('form');
-      form.method = 'dialog';
-      const h = document.createElement('h2');
-      h.textContent = title;
-      form.append(h);
-      for (const line of message.split('\n')) {
-        const p = document.createElement('p');
-        p.textContent = line;
-        form.append(p);
-      }
-      const actions = document.createElement('div');
-      actions.className = 's-confirm-actions';
-      const cancel = document.createElement('button');
-      cancel.value = 'cancel';
-      cancel.className = 'btn';
-      cancel.textContent = 'キャンセル';
-      const ok = document.createElement('button');
-      ok.value = 'ok';
-      ok.className = 'btn btn-danger';
-      ok.textContent = okText;
-      actions.append(cancel, ok);
-      form.append(actions);
-      dlg.append(form);
-      document.body.append(dlg);
-      dlg.addEventListener('close', () => {
-        resolve(dlg.returnValue === 'ok');
-        dlg.remove();
-      });
-      dlg.showModal();
-      cancel.focus();
-    });
-  }
-
-  // 5) 保存場所の表示は一覧の下に置く
+  // 5) 保存場所の表示は一覧の下に置く（バックアップの場所も案内する）
   if (listSection) {
     const note = document.createElement('p');
     note.className = 'stride-local-note';
-    note.textContent = '🔒 データはこの端末の中だけに保存されます（同期なし・サーバーには送信しません）';
+    note.textContent = '🔒 データはこの端末の中だけに保存されます（同期なし・サーバーには送信しません）。バックアップは「設定 → タスクのデータ」から。';
     listSection.after(note);
   }
 
