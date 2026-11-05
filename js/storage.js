@@ -19,6 +19,8 @@ export function defaultData() {
       activityLevel: 'normal', // 'low' | 'normal' | 'high'
       stepGoal: 8000,
       lastExportAt: null,
+      // LINE で家族に報告（v2.4.0）。既定はオフ。体重は増減だけを送る
+      share: { enabled: false, name: '', weekly: true, pb: true, weight: false },
     },
     exercises: [...DEFAULT_EXERCISES],
     weights: [],
@@ -90,6 +92,13 @@ export function normalize(obj) {
     activityLevel: ['low', 'normal', 'high'].includes(s.activityLevel) ? s.activityLevel : 'normal',
     stepGoal: num(s.stepGoal) > 0 ? Math.round(num(s.stepGoal)) : base.settings.stepGoal,
     lastExportAt: s.lastExportAt || null,
+    share: {
+      enabled: Boolean(s.share && s.share.enabled),
+      name: str(s.share && s.share.name).trim().slice(0, 20),
+      weekly: s.share && s.share.weekly === false ? false : true,
+      pb: s.share && s.share.pb === false ? false : true,
+      weight: Boolean(s.share && s.share.weight),
+    },
   };
 
   const exercises = Array.isArray(obj.exercises)

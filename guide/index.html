@@ -101,6 +101,7 @@
     <li><a href="#features">便利な機能</a></li>
     <li><a href="#remind">入力忘れのお知らせ（通知）</a></li>
     <li><a href="#steps">歩数の自動取り込み（ヘルスケア）</a></li>
+    <li><a href="#line">LINE で受け取る（入力忘れ・家族への報告）</a></li>
     <li><a href="#trouble">してはいけないこと・困ったとき</a></li>
     <li><a href="#admin">管理者向け：家族の保存先とトークンを用意する</a></li>
   </ol>
@@ -230,7 +231,7 @@
 <section class="card" id="remind">
   <h2><span class="no">8</span>入力忘れのお知らせ（通知）</h2>
   <p>毎日 21 時ごろ、<strong>その日の体重がまだ記録されていないときだけ</strong>、iPhone に通知が届きます。記録済みの日は届きません。</p>
-  <div class="note">先に手順 4（記録の保存先）を済ませておく必要があります。また、管理者が通知の準備（手順 11）を済ませている必要があります。iOS 16.4 以降で使えます。</div>
+  <div class="note">先に手順 4（記録の保存先）を済ませておく必要があります。また、管理者が通知の準備（手順 12）を済ませている必要があります。iOS 16.4 以降で使えます。</div>
   <ol class="steps">
     <li>ホーム画面の <strong>STRIDE アイコン</strong>から開きます（Safari からでは通知を受け取れません）。</li>
     <li><span class="btnlike">⚙ 設定</span> →「記録の保存先（GitHub）」の欄の下にある「<strong>入力忘れのお知らせ</strong>」で、<span class="btnlike">この端末で通知を受け取る</span> をタップします。</li>
@@ -257,7 +258,7 @@
 <section class="card" id="steps">
   <h2><span class="no">9</span>歩数の自動取り込み（ヘルスケア）</h2>
   <p>iPhone の「ヘルスケア」の歩数を、毎日自動で STRIDE に取り込みます。「ショートカット」アプリが歩数を読み取り、あなたの保存先（受け取り箱）に送り、STRIDE が次に開いたときに取り込みます。</p>
-  <div class="note">先に手順 4（記録の保存先）を済ませておく必要があります。歩数用のトークン（手順 11 で管理者からもらう「歩数用」）を使います。</div>
+  <div class="note">先に手順 4（記録の保存先）を済ませておく必要があります。歩数用のトークン（手順 12 で管理者からもらう「歩数用」）を使います。</div>
   <div class="warn">受け取り箱に置いた歩数と日付は、STRIDE が取り込むまで暗号化されません（取り込んだら消えます）。</div>
   <h3>ショートカットを作る（最初に 1 回）</h3>
   <ol class="steps">
@@ -289,8 +290,34 @@
   <div class="warn">iPhone がロックされていると、ヘルスケアのデータを読めずに失敗することがあります（要確認）。うまく動かない日は、寝る前に「STRIDE 歩数」を手動で実行してください。また、日付が変わる前（24 時より前）に実行してください。</div>
 </section>
 
+<section class="card" id="line">
+  <h2><span class="no">10</span>LINE で受け取る（入力忘れ・家族への報告）</h2>
+  <p>LINE 公式アカウント「STRIDE」を友だち追加すると、次のメッセージが LINE に届きます。</p>
+  <div class="scroll"><table>
+    <tr><th>メッセージ</th><th>届く相手</th><th>いつ</th></tr>
+    <tr><td>入力忘れのお知らせ</td><td>本人だけ（管理者が設定した人）</td><td>21 時ごろ、その日の体重がまだのとき</td></tr>
+    <tr><td>今週のふりかえり</td><td>家族全員（友だち追加した人）</td><td>日曜の夜 21 時ごろ</td></tr>
+    <tr><td>自己ベストの報告</td><td>家族全員</td><td>記録してから 1 分ほどで</td></tr>
+  </table></div>
+  <h3>家族のみなさんがすること</h3>
+  <ol class="steps">
+    <li>管理者から LINE 公式アカウント「STRIDE」の<strong>友だち追加用の QR コード</strong>を見せてもらい、LINE の「友だち追加」→「QR コード」で読み取って追加します。
+      <div class="shot">LINE で「STRIDE」を友だち追加したところ</div>
+    </li>
+    <li>自分の記録を家族に報告したい人は、STRIDE の <span class="btnlike">⚙ 設定</span> →「<strong>LINE で家族に報告</strong>」で、
+      <ul>
+        <li>「家族に報告する」にチェック</li>
+        <li>「家族に表示する名前」を入力（例：ママ）</li>
+        <li>送る内容（今週のふりかえり・自己ベスト・体重の増減）を選ぶ</li>
+      </ul>
+      を設定して <span class="btnlike">報告の設定を保存</span> をタップします。
+    </li>
+  </ol>
+  <div class="note">体重そのものは送りません。「体重の増減も含める」をオンにしたときだけ「今週 −0.6kg」のように増減を送ります。送った内容は LINE のサーバーを通ります。</div>
+</section>
+
 <section class="card" id="trouble">
-  <h2><span class="no">10</span>してはいけないこと・困ったとき</h2>
+  <h2><span class="no">11</span>してはいけないこと・困ったとき</h2>
   <div class="danger">保存先の設定（手順 4）が終わる前に、ホーム画面の STRIDE アイコンを削除しないでください。記録が消えます。</div>
   <div class="scroll"><table>
     <tr><th>困ったこと</th><th>どうするか</th></tr>
@@ -303,7 +330,7 @@
 </section>
 
 <section class="card admin" id="admin">
-  <h2><span class="no">11</span>管理者向け：家族の保存先とトークンを用意する</h2>
+  <h2><span class="no">12</span>管理者向け：家族の保存先とトークンを用意する</h2>
   <p>家族の保存先（非公開リポジトリ）は、管理者の GitHub アカウントに作ります。家族は GitHub のアカウントがなくても使えます。</p>
   <h3>トークンを作る（家族 1 人につき 1 つ）</h3>
   <ol class="steps">
@@ -329,7 +356,23 @@
     <li>家族に、手順 8 で「この端末で通知を受け取る」を押してもらいます。</li>
     <li>テスト通知を送るとき：<code>gh workflow run remind.yml -R tk1192-creator/stride-○○ -f test=true</code></li>
   </ol>
-  <div class="note">管理者は保存先（箱）を管理できますが、中身は家族の合言葉で暗号化されているため読めません。通知のために置く情報は「最後に体重を記録した日付」と通知先の情報だけです。</div>
+  <h3>LINE で受け取る準備（最初に 1 回）</h3>
+  <ol class="steps">
+    <li><a href="https://entry.line.biz/" target="_blank" rel="noopener">LINE 公式アカウントの作成ページ</a>で、自分の LINE アカウントでログインし、公式アカウントを作ります（アカウント名：<code>STRIDE</code>、無料のコミュニケーションプラン）。</li>
+    <li>LINE Official Account Manager の「<strong>設定</strong>」→「<strong>Messaging API</strong>」→「<strong>Messaging API を利用する</strong>」を押し、プロバイダー（例：<code>STRIDE</code>）を作ります。</li>
+    <li>同じく「設定」→「<strong>応答設定</strong>」で、「あいさつメッセージ」「応答メッセージ」をオフにします（家族が話しかけても自動の返事が出ないように）。</li>
+    <li><a href="https://developers.line.biz/console/" target="_blank" rel="noopener">LINE Developers</a> を開き、作ったプロバイダー → チャネルを選びます。
+      <ul>
+        <li>「<strong>Messaging API 設定</strong>」タブの一番下「<strong>チャネルアクセストークン（長期）</strong>」で「発行」を押してコピーします（パスワードと同じ扱い）。</li>
+        <li>「<strong>チャネル基本設定</strong>」タブの一番下「<strong>あなたのユーザー ID</strong>」（U で始まる 33 文字）を控えます。</li>
+        <li>「Messaging API 設定」タブの <strong>QR コード</strong>で、自分と家族が友だち追加します。</li>
+      </ul>
+    </li>
+    <li>パソコンで、STRIDE のフォルダ（<code>fitlog</code>）を開いた PowerShell で次を実行します。<br><code>python tools/notify/setup_line.py tk1192-creator/stride-○○ tk1192-creator/stride-△△</code><br>聞かれたら、チャネルアクセストークン（画面には表示されません）と、各保存先の持ち主の LINE ユーザー ID（入力忘れを LINE でも受け取る人だけ。分からなければ空欄）を入れます。</li>
+    <li>テスト：<code>gh workflow run remind.yml -R tk1192-creator/stride-○○ -f test=true</code>（入力忘れ）、<code>gh workflow run weekly.yml -R tk1192-creator/stride-○○ -f test=true</code>（ふりかえり。家族全員に届きます）</li>
+  </ol>
+  <div class="warn">無料で送れるのは月 200 通まで（送る相手の人数 × 通数）です。家族 2 人なら月 50〜70 通ほどの見込みです。画面の名前は変わることがあります（要確認）。</div>
+  <div class="note">管理者は保存先（箱）を管理できますが、中身は家族の合言葉で暗号化されているため読めません。通知のために置く情報は「最後に体重を記録した日付」と通知先の情報だけです。家族への報告をオンにした人は、報告の文章（運動した日数・自己ベスト・体重の増減）も置かれます。</div>
 </section>
 
 <footer>

@@ -1,0 +1,32 @@
+# STRIDE 自己ベストの報告を LINE で家族に送る（保存先リポジトリ stride-○○ に .github/workflows/outbox.yml として置く）
+# アプリが outbox/ に報告を置いたとき（push）に動く。送った報告は消す（その削除ではこの仕組みは再び動かない）。
+name: STRIDE 自己ベストの報告（LINE）
+
+on:
+  push:
+    paths:
+      - 'outbox/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stride-outbox
+  cancel-in-progress: false
+
+jobs:
+  outbox:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: node .github/scripts/outbox.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}

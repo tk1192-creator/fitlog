@@ -513,6 +513,7 @@ th { color: var(--text-secondary); font-weight: 700; position: sticky; top: 0; b
 .cloud-steps a { color: var(--accent); }
 .notify-box { margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--border); }
 .notify-title { margin: 0 0 4px; font-size: 15px; font-weight: 800; }
+#view .card .check-row + .check-row, #view .card .field + .check-row { margin-top: 8px; }
 .check-row { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; }
 .check-row input { width: 22px; height: 22px; margin-top: 2px; flex: none; }
 .home-alert { border-color: var(--danger); }

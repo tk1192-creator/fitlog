@@ -17,7 +17,49 @@ export function unmount() {
 }
 
 export function render(root, app) {
-  root.append(cloudCard(app), profileCard(app), exerciseCard(app), lockCard(app), dataCard(app), taskDataCard(app), dangerCard(app), aboutCard());
+  root.append(cloudCard(app), shareCard(app), profileCard(app), exerciseCard(app), lockCard(app), dataCard(app), taskDataCard(app), dangerCard(app), aboutCard());
+}
+
+/* ---------- LINE で家族に報告（js/share.js。送信は保存先の GitHub Actions） ---------- */
+
+function shareCard(app) {
+  const card = h('section', { class: 'card' }, h('h2', { class: 'card-title', text: 'LINE で家族に報告' }));
+  if (!cloud.getConfig()) {
+    card.append(h('p', { class: 'card-note', text: '先に「記録の保存先（GitHub）」を設定すると使えます。' }));
+    return card;
+  }
+  const s = { enabled: false, name: '', weekly: true, pb: true, weight: false, ...(app.data.settings.share || {}) };
+  const cb = (checked) => h('input', { type: 'checkbox', checked: Boolean(checked) });
+  const enabled = cb(s.enabled);
+  const weekly = cb(s.weekly);
+  const pb = cb(s.pb);
+  const weight = cb(s.weight);
+  const name = h('input', { type: 'text', value: s.name, placeholder: '例: パパ', maxlength: '20' });
+  const save = h('button', { type: 'button', class: 'btn btn-primary btn-block', text: '報告の設定を保存' });
+  save.addEventListener('click', async () => {
+    if (enabled.checked && !name.value.trim()) return toast('家族に表示する名前を入れてください');
+    if (enabled.checked && !s.enabled) {
+      const ok = await confirmDialog(
+        '運動した日数・自己ベスト' + (weight.checked ? '・体重の増減' : '') + 'を、LINE 公式アカウント「STRIDE」の友だち（家族）に送ります。\n体重そのものは送りません。送った内容は LINE のサーバーを通ります。',
+        { title: '家族への報告をオンにする', okText: 'オンにする' },
+      );
+      if (!ok) return;
+    }
+    app.update((d) => {
+      d.settings.share = { enabled: enabled.checked, name: name.value.trim(), weekly: weekly.checked, pb: pb.checked, weight: weight.checked };
+    });
+    toast(enabled.checked ? '家族への報告をオンにしました' : '家族への報告をオフにしました');
+  });
+  card.append(
+    h('p', { class: 'card-note' }, 'LINE 公式アカウント「STRIDE」を友だち追加した家族に送ります（準備は ', h('a', { href: './guide/#line', text: '手引きの「LINE で受け取る」' }), '）。'),
+    h('label', { class: 'check-row' }, enabled, h('span', { text: '家族に報告する' })),
+    field('家族に表示する名前', name),
+    h('label', { class: 'check-row' }, weekly, h('span', { text: '今週のふりかえり（日曜の夜：運動した日数・自己ベストの数）' })),
+    h('label', { class: 'check-row' }, pb, h('span', { text: '自己ベストを更新したらすぐ報告' })),
+    h('label', { class: 'check-row' }, weight, h('span', { text: '体重の増減も含める（「今週 −0.6kg」のように増減だけ。体重そのものは送らない）' })),
+    save,
+  );
+  return card;
 }
 
 /* ---------- 記録の保存先（GitHub の非公開リポジトリ。js/cloud.js） ---------- */

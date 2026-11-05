@@ -1,5 +1,5 @@
 # STRIDE 入力忘れのお知らせ（保存先リポジトリ stride-○○ に .github/workflows/remind.yml として置く）
-# 21 時（日本時間）以降、その日の体重がまだ記録されていなければ、登録した端末に通知を送る。
+# 21 時（日本時間）以降、その日の体重がまだ記録されていなければ、登録した端末と LINE（設定時）に通知を送る。
 # 定時実行は混雑で遅れたり飛ばされたりすることがあるため、21:07・21:37・22:07 の 3 回動かし、1 日 1 回だけ送る。
 name: STRIDE 入力忘れのお知らせ
 
@@ -39,4 +39,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
           TEST: ${{ inputs.test || false }}

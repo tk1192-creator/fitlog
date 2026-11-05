@@ -9,6 +9,7 @@
 // - 暗号化：合言葉から PBKDF2（SHA-256・31 万回）で鍵を作り、AES-256-GCM で暗号化。鍵とトークンはこの端末にだけ保存する
 
 import { load as loadLocal, newId, normalize, save as saveLocal } from './storage.js';
+import { readQueue, removeFromQueue, shareSettings, weeklySummary } from './share.js';
 
 const CONFIG_KEY = 'stride.cloud';
 const STATE_KEY = 'stride.cloud.state'; // { dirty, recordsSha, baseIds, tasksSha, tasksHash, lastSyncAt, lastError }
@@ -19,6 +20,8 @@ const INBOX_DIR = 'inbox'; // ショートカットが歩数を置く受け取�
 const NOTIFY_STATUS_PATH = 'notify/status.json'; // 入力忘れのお知らせ用：最後に体重を記録した日付だけ（値は含めない）
 const VAPID_PUBLIC_PATH = 'notify/vapid-public.txt'; // 通知の公開鍵（管理者が tools/notify/setup_notify.py で置く）
 const DEVICE_KEY = 'stride.deviceId';
+const WEEKLY_PATH = 'notify/weekly.json'; // LINE で家族に送る「今週のふりかえり」の文章（日曜の夜に Actions が送る）
+const OUTBOX_DIR = 'outbox'; // LINE で家族に送る自己ベストの報告（置かれると Actions がすぐ送って消す）
 const PBKDF2_ITERATIONS = 310000;
 const PUSH_DELAY_MS = 3000;
 const LISTS = ['weights', 'strength', 'jogs', 'daily'];
@@ -280,6 +283,7 @@ export async function syncNow() {
         if (await importStepsInbox()) again = true; // 取り込んだ歩数を記録として保存し直す
         await syncTasks();
         await updateNotifyStatus();
+        await syncShare();
       } while (again);
       setState({ lastSyncAt: new Date().toISOString(), lastError: null });
       setStatus('ok');
@@ -468,6 +472,40 @@ async function writeNotifyStatus(cfg, last) {
       throw e;
     }
   }
+}
+
+/* ---------- LINE で家族に報告（文章を置くだけ。送るのは Actions） ---------- */
+
+async function syncShare() {
+  const cfg = getConfig();
+  // 送れていない自己ベストの報告を送る（1 件 1 ファイル）
+  for (const item of readQueue()) {
+    const body = JSON.stringify({ text: item.text, createdAt: new Date().toISOString() });
+    try {
+      await putFile(cfg, `${OUTBOX_DIR}/event-${item.id}.json`, body, null);
+    } catch (e) {
+      if (e.status !== 422) throw e; // 422 は同じファイルが置き済み
+    }
+    removeFromQueue(item.id);
+  }
+  // 今週のふりかえり（変わったときだけ書き直す。報告をやめたら消す）
+  const data = loadLocal();
+  const s = shareSettings(data);
+  const st = getState();
+  if (!(s.enabled && s.weekly)) {
+    if (st.weeklyHash) {
+      const cur = await getFile(cfg, WEEKLY_PATH);
+      if (cur) await deleteFile(cfg, WEEKLY_PATH, cur.sha);
+      setState({ weeklyHash: null });
+    }
+    return;
+  }
+  const w = weeklySummary(data);
+  const hash = await sha256Hex(JSON.stringify(w));
+  if (hash === st.weeklyHash) return;
+  const cur = await getFile(cfg, WEEKLY_PATH);
+  await putFile(cfg, WEEKLY_PATH, JSON.stringify({ ...w, updatedAt: new Date().toISOString() }), cur ? cur.sha : null);
+  setState({ weeklyHash: hash });
 }
 
 function b64urlToBytes(s) {

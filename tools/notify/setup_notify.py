@@ -29,6 +29,12 @@ HERE = pathlib.Path(__file__).resolve().parent
 FILES = {
     ".github/workflows/remind.yml": HERE / "remind.yml",
     ".github/scripts/remind.mjs": HERE / "remind.mjs",
+    # LINE で受け取る（v2.4.0）。LINE の鍵がなければ何もしない
+    ".github/scripts/line.mjs": HERE / "line.mjs",
+    ".github/workflows/weekly.yml": HERE / "weekly.yml",
+    ".github/scripts/weekly.mjs": HERE / "weekly.mjs",
+    ".github/workflows/outbox.yml": HERE / "outbox.yml",
+    ".github/scripts/outbox.mjs": HERE / "outbox.mjs",
 }
 
 
