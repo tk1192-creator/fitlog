@@ -21,7 +21,12 @@
   <header class="appbar">
     <div class="appbar-inner">
       <div class="appbar-left">
-        <span class="brand" aria-hidden="true">STRIDE<b>›</b></span>
+        <span class="brand-row">
+          <span class="brand" aria-hidden="true">STRIDE<b>›</b></span>
+          <button type="button" id="sync-indicator" class="sync-indicator" data-status="off" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.1 9.6 4.2 4.2 0 0 0 7 18z"/></svg>
+          </button>
+        </span>
         <h1 id="title">ホーム</h1>
       </div>
       <div class="clock" aria-label="現在の日時">

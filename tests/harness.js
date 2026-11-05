@@ -1,13 +1,24 @@
-// 最小限のテスト実行器（ブラウザ用）
+// 最小限のテスト実行器（ブラウザ用）。非同期のテスト（Promise を返す関数）にも対応
 const results = [];
+const pending = [];
 
 export function test(name, fn) {
   try {
-    fn();
-    results.push({ name, ok: true });
+    const r = fn();
+    if (r && typeof r.then === 'function') {
+      pending.push(r.then(() => results.push({ name, ok: true }), (e) => results.push({ name, ok: false, msg: e.message })));
+    } else {
+      results.push({ name, ok: true });
+    }
   } catch (e) {
     results.push({ name, ok: false, msg: e.message });
   }
+}
+
+/** 順番に実行したい非同期テスト（localStorage を共有するもの） */
+let chain = Promise.resolve();
+export function testSeq(name, fn) {
+  chain = chain.then(fn).then(() => results.push({ name, ok: true }), (e) => results.push({ name, ok: false, msg: e.message }));
 }
 
 export function eq(actual, expected, label = '') {
@@ -16,7 +27,9 @@ export function eq(actual, expected, label = '') {
   if (a !== b) throw new Error(`${label} 期待値 ${b} / 実際 ${a}`);
 }
 
-export function report() {
+export async function report() {
+  await Promise.all(pending);
+  await chain;
   const ul = document.getElementById('results');
   for (const r of results) {
     const li = document.createElement('li');

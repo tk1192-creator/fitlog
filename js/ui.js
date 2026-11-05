@@ -94,3 +94,30 @@ export function segmented(options, current, onChange, ariaLabel) {
     ),
   );
 }
+
+/**
+ * 選択肢つきダイアログ。押したボタンの value を返す（キャンセルは null）
+ * @param {{value: string, label: string, kind?: 'primary'|'danger'}[]} choices
+ */
+export function choiceDialog(message, { title = '確認', choices = [], cancelText = 'キャンセル' } = {}) {
+  return new Promise((resolve) => {
+    const dlg = document.getElementById('dialog');
+    dlg.replaceChildren(
+      h('form', { method: 'dialog', class: 'dialog-body' },
+        h('h2', { class: 'dialog-title', text: title }),
+        ...String(message).split('\n').map((line) => h('p', { text: line })),
+        h('div', { class: 'dialog-choices' },
+          choices.map((c) => h('button', { value: c.value, class: `btn btn-block ${c.kind === 'primary' ? 'btn-primary' : c.kind === 'danger' ? 'btn-danger' : ''}`, text: c.label })),
+          h('button', { value: '', class: 'btn btn-block', text: cancelText }),
+        ),
+      ),
+    );
+    const onClose = () => {
+      dlg.removeEventListener('close', onClose);
+      resolve(dlg.returnValue || null);
+    };
+    dlg.returnValue = '';
+    dlg.addEventListener('close', onClose);
+    dlg.showModal();
+  });
+}

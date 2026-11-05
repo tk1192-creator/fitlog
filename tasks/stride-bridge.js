@@ -116,8 +116,9 @@
   //    この画面の欄は隠し、設定画面から ./tasks/#do=<操作> で開かれたときに、元のボタンの処理を実行する。
   //    （元のボタンは隠すだけで残すので、Task Board 本体の処理・確認ダイアログをそのまま使える）
   const IMPORT_KEY = 's-task-import';
-  const actionMatch = location.hash.match(/^#do=([a-z]+)$/);
-  if (actionMatch) {
+  function runHashAction() {
+    const actionMatch = location.hash.match(/^#do=([a-z]+)$/);
+    if (!actionMatch) return;
     history.replaceState(null, '', location.pathname + location.search);
     const action = actionMatch[1];
     const clickById = (id) => { const el = document.getElementById(id); if (el) el.click(); };
@@ -131,6 +132,9 @@
       else if (action === 'import') importFromSettings();
     }, 300);
   }
+  runHashAction();
+  // タスク画面を開いたまま #do=… だけが変わった場合（ページの読み込み直しが起きない）にも対応する
+  window.addEventListener('hashchange', runHashAction);
 
   /** 設定画面で選んだファイルを、Task Board 本体のインポート処理（形式の検証・置き換えの確認）に渡す */
   function importFromSettings() {
@@ -194,6 +198,17 @@
     nav.append(a);
   }
   document.body.append(nav);
+
+  // 6) GitHub への保存（STRIDE の設定で接続済みのとき）：タスクの変更を 1 分ごと・画面を離れるときにバックアップする
+  //    記録の同期も同時に行う（他の端末の変更を取り込む）。タスク本体（app.js）は端末の localStorage のまま
+  try {
+    if (JSON.parse(localStorage.getItem('stride.cloud') || 'null')) {
+      const sync = () => import('../js/cloud.js').then((m) => m.syncNow()).catch(() => {});
+      setTimeout(sync, 2000);
+      setInterval(sync, 60 * 1000);
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') sync(); });
+    }
+  } catch (_) { /* 何もしない */ }
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('../sw.js').catch(() => {});

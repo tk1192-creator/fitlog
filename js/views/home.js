@@ -3,8 +3,36 @@ import { bmi, bmiCategory, fmtNum, latestWeight, startWeight } from '../calc.js'
 import { fmtDateShort, h } from '../ui.js';
 import { goalCards, signed } from './home-goal.js';
 import { tasksCard } from './home-tasks.js';
+import { getConfig as cloudConfig } from '../cloud.js';
+
+/** iPhone・iPad の Safari で開いているか（ホーム画面のアプリではない） */
+function isIOSSafariTab() {
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const standalone = navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+  return ios && !standalone;
+}
+
+/** 記録を守るための注意（Safari で開いている／GitHub への保存が未設定） */
+function safetyCards(app) {
+  const cards = [];
+  if (isIOSSafariTab()) {
+    cards.push(h('section', { class: 'card home-alert' },
+      h('h2', { class: 'card-title', text: 'Safari で開いています' }),
+      h('p', { class: 'card-note', text: 'ここで入力した記録は、ホーム画面の STRIDE とは別の場所に保存されます。記録はホーム画面の STRIDE アイコンから開いて入力してください。' }),
+    ));
+  }
+  if (!cloudConfig()) {
+    cards.push(h('section', { class: 'card home-alert' },
+      h('h2', { class: 'card-title', text: '記録を GitHub に保存しましょう' }),
+      h('p', { class: 'card-note', text: '今は記録がこの端末の中にしかありません。ホーム画面のアイコンを削除すると記録も消えます。GitHub への保存を設定すると、入れ直しても PC からでも同じ記録を使えます。' }),
+      h('button', { type: 'button', class: 'btn btn-primary btn-block', text: '保存先を設定する', onclick: () => app.navigate('settings') }),
+    ));
+  }
+  return cards;
+}
 
 export function render(root, app) {
+  root.append(...safetyCards(app));
   const { weights } = app.data;
   const { heightCm } = app.data.settings;
   const latest = latestWeight(weights);

@@ -7,19 +7,28 @@ import * as calendar from './views/calendar.js';
 import * as settings from './views/settings.js';
 import { toast } from './ui.js';
 import { registerSW } from './sw-register.js';
+import * as cloud from './cloud.js';
 
 const VIEWS = { home, records, charts, calendar, settings };
 const TITLES = { home: 'ホーム', records: '記録', charts: 'グラフ', calendar: 'カレンダー', settings: '設定' };
+
+/** 入力欄で入力中か（同期で画面を描き直すと、入力中の内容が消えるため） */
+function isEditing() {
+  const el = document.activeElement;
+  return Boolean(el && el.closest && el.closest('#view') && /^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName));
+}
 
 const app = {
   data: load(),
   current: 'home',
   params: {},
+  renderLater: false,
 
   /** データを変更して保存し、画面を描き直す。fn はデータを直接書き換える */
   update(fn) {
     fn(this.data);
     if (!save(this.data)) toast('保存に失敗しました。空き容量を確認してください');
+    cloud.markLocalChange();
     this.render();
   },
 
@@ -27,7 +36,16 @@ const app = {
   replaceData(next) {
     this.data = next;
     if (!save(this.data)) toast('保存に失敗しました。空き容量を確認してください');
+    cloud.markLocalChange();
     this.render();
+  },
+
+  /** GitHub から読み込んだ記録を反映する（GitHub へ送り返す印は付けない） */
+  applyRemote(next) {
+    this.data = next;
+    save(this.data);
+    if (isEditing()) this.renderLater = true; // 入力が終わってから描き直す
+    else this.render();
   },
 
   /** タブを切り替える。params はその画面に渡す指定（例: {type: 'jog'}） */
@@ -46,6 +64,7 @@ const app = {
   },
 
   render() {
+    this.renderLater = false;
     const root = document.getElementById('view');
     const view = VIEWS[this.current];
     if (view.unmount) view.unmount();
@@ -54,6 +73,11 @@ const app = {
     this.params = {};
   },
 };
+
+// 入力が終わったら、同期で後回しにした描き直しを行う
+document.addEventListener('focusout', () => {
+  setTimeout(() => { if (app.renderLater && !isEditing()) app.render(); }, 0);
+});
 
 // data-tab を持つタブだけがアプリ内の画面切替。「タスク」タブは別ページ（tasks/）へのリンク
 document.querySelectorAll('.tab[data-tab]').forEach((b) => b.addEventListener('click', () => app.navigate(b.dataset.tab)));
@@ -81,11 +105,27 @@ function tick() {
 tick();
 setInterval(tick, 1000);
 
+// 上部バーの保存状態（GitHub への保存）
+const syncEl = document.getElementById('sync-indicator');
+if (syncEl) {
+  cloud.onStatus((s) => {
+    syncEl.hidden = false;
+    syncEl.dataset.status = s.status;
+    syncEl.title = s.status === 'off' ? 'GitHub への保存：未設定' : `GitHub への保存：${s.label}${s.lastError ? `（${s.lastError}）` : ''}`;
+    syncEl.setAttribute('aria-label', syncEl.title);
+  });
+  syncEl.addEventListener('click', () => app.navigate('settings'));
+}
+
 // タスク画面の下部タブから ./#records などで来たときは、その画面を開く（URL の # は消す）
 const initialTab = location.hash.slice(1);
 if (location.hash) history.replaceState(null, '', location.pathname + location.search);
 app.navigate(VIEWS[initialTab] ? initialTab : 'home');
 registerSW();
+
+// GitHub との同期（起動時・アプリに戻ったとき・電波が戻ったとき・記録を変えたとき）
+cloud.attachApp(app);
+cloud.startAutoSync();
 
 // デバッグ用（ブラウザのコンソールから参照できるように）
 window.fitlog = app;

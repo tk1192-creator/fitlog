@@ -3,14 +3,168 @@ import { ACTIVITY_LEVELS, daysBetween, todayStr } from '../calc.js';
 import { defaultData, exportCSV, exportJSON, normalize } from '../storage.js';
 import { generateSample } from '../sample.js';
 import { clearAllTasks, clearDoneTasks, countDoneTasks, exportTasksJSON, loadTasks } from './home-tasks.js';
-import { confirmDialog, field, fmtDateLong, h, toast } from '../ui.js';
+import { choiceDialog, confirmDialog, field, fmtDateLong, h, toast } from '../ui.js';
+import * as cloud from '../cloud.js';
 
 const BACKUP_REMIND_DAYS = 14;
 const TASK_IMPORT_KEY = 's-task-import'; // タスク画面へ渡すインポート用ファイル（sessionStorage）
 const TASK_IMPORT_MAX = 4 * 1024 * 1024; // sessionStorage に収まる大きさ（目安）
 
+let unsubscribeCloud = null;
+
+export function unmount() {
+  if (unsubscribeCloud) { unsubscribeCloud(); unsubscribeCloud = null; }
+}
+
 export function render(root, app) {
-  root.append(profileCard(app), exerciseCard(app), lockCard(app), dataCard(app), taskDataCard(app), dangerCard(app), aboutCard());
+  root.append(cloudCard(app), profileCard(app), exerciseCard(app), lockCard(app), dataCard(app), taskDataCard(app), dangerCard(app), aboutCard());
+}
+
+/* ---------- 記録の保存先（GitHub の非公開リポジトリ。js/cloud.js） ---------- */
+
+function fmtDateTime(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function countOf(data) {
+  return (data.weights?.length || 0) + (data.strength?.length || 0) + (data.jogs?.length || 0) + (data.daily?.length || 0);
+}
+
+function cloudCard(app) {
+  const card = h('section', { class: 'card', id: 'cloud-card' },
+    h('h2', { class: 'card-title', text: '記録の保存先（GitHub）' }),
+  );
+  const cfg = cloud.getConfig();
+
+  if (!cfg) {
+    const user = location.hostname.endsWith('.github.io') ? location.hostname.split('.')[0] : 'ユーザー名';
+    const repo = h('input', { type: 'text', value: `${user}/stride-backup`, autocomplete: 'off', autocapitalize: 'off', spellcheck: false });
+    const token = h('input', { type: 'password', placeholder: 'github_pat_…', autocomplete: 'off' });
+    const pass = h('input', { type: 'password', placeholder: '8 文字以上', autocomplete: 'new-password' });
+    const pass2 = h('input', { type: 'password', placeholder: 'もう一度', autocomplete: 'new-password' });
+    const withTasks = h('input', { type: 'checkbox' });
+    const go = h('button', { type: 'button', class: 'btn btn-primary btn-block', text: '接続して保存を始める' });
+
+    go.addEventListener('click', async () => {
+      if (!repo.value.trim().includes('/')) return toast('リポジトリは「ユーザー名/リポジトリ名」で入力してください');
+      if (!token.value.trim()) return toast('トークンを入力してください');
+      if (pass.value.length < 8) return toast('合言葉は 8 文字以上にしてください');
+      if (pass.value !== pass2.value) return toast('合言葉（確認）が一致しません');
+      if (withTasks.checked) {
+        const ok = await confirmDialog('タスクも暗号化して GitHub に保存します。\nお客様情報を含むタスクを外部に保存してよいかは、会社の規定を確認してください。', { title: 'タスクも保存する', okText: '保存する' });
+        if (!ok) return;
+      }
+      go.disabled = true;
+      go.textContent = '確認しています…';
+      try {
+        const found = await cloud.inspect({ repo: repo.value, token: token.value, passphrase: pass.value });
+        const local = app.data;
+        let mode = 'local';
+        if (found.remoteRecords) {
+          const choice = await choiceDialog(
+            `GitHub に記録があります（${countOf(found.remoteRecords)} 件、${fmtDateTime(found.remoteSavedAt)} 保存）。\nこの端末の記録は ${countOf(local)} 件です。どうしますか？`,
+            {
+              title: 'GitHub の記録',
+              choices: [
+                { value: 'remote', label: 'GitHub の記録を使う（この端末の記録は置き換え）', kind: countOf(local) ? '' : 'primary' },
+                { value: 'merge', label: '両方を合わせる', kind: countOf(local) ? 'primary' : '' },
+                { value: 'local', label: 'この端末の記録で GitHub を上書きする', kind: 'danger' },
+              ],
+            },
+          );
+          if (!choice) throw new Error('キャンセルしました');
+          mode = choice;
+        }
+        let restoreTasks = false;
+        if (found.remoteTasks && Array.isArray(found.remoteTasks.tasks) && found.remoteTasks.tasks.length) {
+          const localTasks = loadTasks() || [];
+          restoreTasks = await confirmDialog(
+            `GitHub にタスクのバックアップがあります（${found.remoteTasks.tasks.length} 件）。この端末に戻しますか？${localTasks.length ? `\nこの端末のタスク（${localTasks.length} 件）は置き換わります。` : ''}`,
+            { title: 'タスクのバックアップ', okText: '戻す', cancelText: '戻さない' },
+          );
+        }
+        const st = await cloud.connect(found, { includeTasks: withTasks.checked, mode, restoreTasks });
+        toast(st.status === 'ok' ? 'GitHub への保存を始めました' : `接続しました（${st.label}）`);
+        app.render();
+      } catch (e) {
+        toast(e.message === 'キャンセルしました' ? 'キャンセルしました'
+          : e.status === 401 ? 'トークンが正しくありません'
+            : e.status === 404 ? 'リポジトリが見つかりません（名前と、トークンの対象リポジトリを確認してください）'
+              : e instanceof TypeError ? '通信できませんでした。電波を確認してください'
+                : (e.message || '接続できませんでした'));
+        go.disabled = false;
+        go.textContent = '接続して保存を始める';
+      }
+    });
+
+    card.append(
+      h('p', { class: 'notice notice-warn', text: '⚠ 未設定：記録はこの端末の中にしかありません。ホーム画面のアイコンを削除すると記録も消えます。' }),
+      h('p', { class: 'card-note', text: '記録を暗号化して、あなたの GitHub の非公開リポジトリに自動で保存します。アプリを入れ直しても、PC からでも、同じ記録を使えます。' }),
+      h('ol', { class: 'cloud-steps' },
+        h('li', {}, 'GitHub で ', h('a', { href: 'https://github.com/settings/personal-access-tokens/new', target: '_blank', rel: 'noopener', text: 'トークンを作る' }), '（Fine-grained token）。対象リポジトリは「stride-backup だけ」、権限は「Contents：Read and write」、期限は 1 年まで'),
+        h('li', { text: '下の欄にリポジトリ名・トークン・合言葉を入れて「接続して保存を始める」を押す' }),
+        h('li', { text: '合言葉は忘れないように控えておく（忘れると GitHub の記録を開けません）' }),
+      ),
+      h('div', { class: 'form' },
+        field('リポジトリ（ユーザー名/リポジトリ名）', repo),
+        field('トークン', token, 'この端末にだけ保存されます'),
+        h('div', { class: 'row-2' }, field('合言葉', pass), field('合言葉（確認）', pass2)),
+        h('label', { class: 'check-row' }, withTasks, h('span', { text: 'タスクも暗号化して保存する（お客様情報を含む場合は会社の規定を確認）' })),
+        go,
+      ),
+    );
+    return card;
+  }
+
+  // ---- 接続済み ----
+  const statusRow = h('p', { class: 'cloud-status' }, h('span', { class: 'dot' }), h('span', { class: 'label' }));
+  const detail = h('p', { class: 'card-note' });
+  const errorRow = h('p', { class: 'notice notice-warn', hidden: true });
+  unsubscribeCloud = cloud.onStatus((s) => {
+    statusRow.dataset.status = s.status;
+    statusRow.querySelector('.label').textContent = `GitHub に保存：${s.label}`;
+    detail.textContent = `最後に同期：${fmtDateTime(s.lastSyncAt)}　／　リポジトリ：${cfg.repo}`;
+    errorRow.hidden = !s.lastError;
+    errorRow.textContent = s.lastError ? `⚠ ${s.lastError}` : '';
+  });
+
+  const withTasks = h('input', { type: 'checkbox', checked: Boolean(cfg.includeTasks) });
+  withTasks.addEventListener('change', async () => {
+    if (withTasks.checked) {
+      const ok = await confirmDialog('タスクも暗号化して GitHub に保存します。\nお客様情報を含むタスクを外部に保存してよいかは、会社の規定を確認してください。', { title: 'タスクも保存する', okText: '保存する' });
+      if (!ok) { withTasks.checked = false; return; }
+    }
+    cloud.setIncludeTasks(withTasks.checked);
+    toast(withTasks.checked ? 'タスクも GitHub に保存します' : 'タスクは GitHub に保存しません（これまでの分は GitHub に残ります）');
+  });
+
+  card.append(
+    statusRow, detail, errorRow,
+    h('p', { class: 'card-note', text: '記録を変えると数秒後に暗号化して保存します。電波がないときは、つながったときに送ります。' }),
+    h('label', { class: 'check-row' }, withTasks, h('span', { text: 'タスクも暗号化して保存する' })),
+    h('div', { class: 'btn-grid' },
+      h('button', {
+        type: 'button', class: 'btn btn-primary', text: '今すぐ同期',
+        onclick: async () => {
+          const s = await cloud.syncNow();
+          toast(s.status === 'ok' ? '同期しました' : s.lastError || s.label);
+        },
+      }),
+      h('button', {
+        type: 'button', class: 'btn btn-danger', text: 'この端末の接続を解除',
+        onclick: async () => {
+          const ok = await confirmDialog('この端末のトークンと合言葉の鍵を消して、GitHub への保存をやめます。\nGitHub の記録と、この端末の記録はどちらも残ります。', { title: '接続の解除', okText: '解除する', danger: true });
+          if (!ok) return;
+          cloud.disconnect();
+          toast('接続を解除しました');
+          app.render();
+        },
+      }),
+    ),
+  );
+  return card;
 }
 
 /* ---------- タスクのデータ（タスク画面の「バックアップ・補助操作」を移したもの） ---------- */

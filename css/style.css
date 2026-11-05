@@ -114,6 +114,19 @@ button, input, select { font: inherit; color: inherit; }
   letter-spacing: 0.22em; color: var(--text-muted);
 }
 .brand b { color: var(--accent); font-style: normal; margin-left: 2px; }
+.brand-row { display: flex; align-items: center; gap: 6px; }
+/* GitHub への保存状態（雲のアイコン）。緑は使わない */
+.sync-indicator {
+  display: inline-grid; place-items: center; width: 22px; height: 18px; padding: 0;
+  border: 0; background: none; color: var(--text-muted); cursor: pointer;
+}
+.sync-indicator svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+.sync-indicator[data-status="ok"] { color: var(--accent); }
+.sync-indicator[data-status="ok"] svg { fill: var(--accent-soft); }
+.sync-indicator[data-status="syncing"] svg, .sync-indicator[data-status="pending"] svg { animation: sync-pulse 1.2s ease-in-out infinite; color: var(--accent); }
+.sync-indicator[data-status="offline"] { color: var(--text-muted); }
+.sync-indicator[data-status="error"], .sync-indicator[data-status="off"] { color: var(--danger); }
+@keyframes sync-pulse { 50% { opacity: .35; } }
 .appbar h1 { margin: 2px 0 0; font-size: 22px; font-weight: 800; letter-spacing: 0.02em; }
 .clock { display: grid; justify-items: end; line-height: 1.1; }
 .clock-date { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
@@ -488,6 +501,21 @@ th { color: var(--text-secondary); font-weight: 700; position: sticky; top: 0; b
 .task-peek-title { font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
 .task-peek-project { grid-column: 2; font-size: 12px; color: var(--text-muted); overflow-wrap: anywhere; }
 
+/* ---------- 記録の保存先（GitHub） ---------- */
+
+.cloud-status { display: flex; align-items: center; gap: 8px; margin: 4px 0 10px; font-weight: 800; }
+.cloud-status .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--text-muted); }
+.cloud-status[data-status="ok"] .dot { background: var(--accent); }
+.cloud-status[data-status="syncing"] .dot, .cloud-status[data-status="pending"] .dot { background: var(--series-2); }
+.cloud-status[data-status="error"] .dot, .cloud-status[data-status="off"] .dot { background: var(--danger); }
+.cloud-steps { margin: 6px 0 12px; padding-left: 1.3em; font-size: 13px; color: var(--text-secondary); }
+.cloud-steps li { margin: 4px 0; }
+.cloud-steps a { color: var(--accent); }
+.check-row { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; }
+.check-row input { width: 22px; height: 22px; margin-top: 2px; flex: none; }
+.home-alert { border-color: var(--danger); }
+.home-alert .card-title::before { background: var(--danger); }
+
 /* ---------- 設定 ---------- */
 
 .lock-status { margin: 4px 0 10px; font-weight: 800; color: var(--text-secondary); }
@@ -564,6 +592,8 @@ th { color: var(--text-secondary); font-weight: 700; position: sticky; top: 0; b
 .dialog-body p { margin: 4px 0; }
 .dialog-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
 .dialog-actions .btn { flex: 1; }
+.dialog-choices { display: grid; gap: 8px; margin-top: 16px; }
+.dialog-choices .btn { margin-top: 0; }
 
 .noscript { padding: 16px; text-align: center; }
 

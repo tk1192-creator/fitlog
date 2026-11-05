@@ -12,6 +12,7 @@ const ASSETS = [
   './css/style.css',
   './js/version.js',
   './js/lock.js',
+  './js/cloud.js',
   './js/app.js',
   './js/calc.js',
   './js/storage.js',
