@@ -250,7 +250,7 @@ html.in-stride #report-btn { min-height: 40px; padding: 0 14px; font-size: 14px;
 /* ---------- 集計：1 行の小さなチップ（押すとその条件で絞り込み。動きは元のまま） ---------- */
 html.in-stride .summary { margin-top: 8px; }
 html.in-stride .summary-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr)); /* 未完了・作業中・確認待ち・完了・期限切れ */
   border-radius: 14px;
   box-shadow: var(--shadow-md);
 }
@@ -359,3 +359,7 @@ html.in-stride .stride-local-note { margin: 0; padding: 0 var(--space-1); }
 
 /* ---------- 「バックアップ・補助操作」は STRIDE の設定画面に移したので隠す（ボタンは設定画面からの操作で使う） ---------- */
 html.in-stride .panel.backup { display: none; }
+
+/* ---------- 集計の「完了」チップ ---------- */
+html.in-stride .s-summary-done .summary-icon { color: var(--status-done-fg); }
+html.in-stride .s-summary-done[aria-pressed="true"] { background: var(--status-done-bg); }

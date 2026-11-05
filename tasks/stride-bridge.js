@@ -99,6 +99,56 @@
     syncBadge();
   }
 
+  // 2b) 集計に「完了」のチップを追加（未完了・作業中・確認待ち・完了・期限切れ）
+  //     Task Board 本体は起動時の 4 枚だけを更新するので、件数はこちらで保存データから数え、
+  //     本体が集計や一覧を描き直したとき（DOM の変化）に合わせて更新する。押すと「状態：完了」で絞り込む
+  const summaryGrid = document.querySelector('.summary-grid');
+  const statusSelect = document.getElementById('filter-status');
+  if (summaryGrid && statusSelect) {
+    const doneCard = document.createElement('button');
+    doneCard.type = 'button';
+    doneCard.className = 'summary-card s-summary-done';
+    doneCard.title = 'クリックすると完了したタスクで絞り込みます';
+    doneCard.setAttribute('aria-pressed', 'false');
+    doneCard.innerHTML = '<span class="summary-icon" aria-hidden="true"><svg viewBox="0 0 24 24" class="icon"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16.5 9.5"/></svg></span>'
+      + '<span class="summary-label">完了</span>'
+      + '<span class="summary-value"><span class="s-done-count">0</span><small>件</small></span>';
+    const overdueCard = summaryGrid.querySelector('[data-summary="overdue"]');
+    if (overdueCard) overdueCard.before(doneCard);
+    else summaryGrid.append(doneCard);
+
+    const countEl = doneCard.querySelector('.s-done-count');
+    const refreshDone = () => {
+      let n = 0;
+      try {
+        const data = JSON.parse(localStorage.getItem('taskBoard.data') || 'null');
+        n = data && Array.isArray(data.tasks) ? data.tasks.filter((t) => t && t.status === 'done').length : 0;
+      } catch (_) { /* 何もしない */ }
+      if (countEl.textContent !== String(n)) countEl.textContent = String(n);
+      doneCard.classList.toggle('has-items', n > 0);
+      doneCard.setAttribute('aria-pressed', String(statusSelect.value === 'done'));
+    };
+    refreshDone();
+    // 本体が描き直した直後は保存が終わっていないことがあるので、少し待ってから数える
+    let refreshTimer = null;
+    const scheduleRefresh = () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(refreshDone, 50); };
+    new MutationObserver(scheduleRefresh).observe(summaryGrid, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['aria-pressed'] });
+    const resultCount = document.getElementById('result-count');
+    if (resultCount) new MutationObserver(scheduleRefresh).observe(resultCount, { subtree: true, childList: true, characterData: true });
+
+    doneCard.addEventListener('click', () => {
+      const active = statusSelect.value === 'done';
+      // 他のチップと同じく、ほかの絞り込み条件はいったん解除する
+      const clearBtn = document.getElementById('clear-filters');
+      if (clearBtn && !clearBtn.disabled) clearBtn.click();
+      if (!active) {
+        statusSelect.value = 'done';
+        statusSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      scheduleRefresh();
+    });
+  }
+
   // 3) 「＋タスクを追加」は右下の丸いボタン（常に表示）。元のボタンを押したのと同じ動きにする
   const addBtn = document.getElementById('add-task-btn');
   if (addBtn) {
