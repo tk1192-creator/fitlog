@@ -15,7 +15,8 @@ export function registerSW() {
   window.addEventListener('load', async () => {
     let reg;
     try {
-      reg = await navigator.serviceWorker.register('./sw.js');
+      // updateViaCache: 'none' … 更新の確認で、ブラウザのキャッシュ（GitHub Pages は約 10 分）を使わない
+      reg = await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
     } catch (e) {
       console.warn('Service Worker を登録できませんでした', e);
       return;

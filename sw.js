@@ -1,8 +1,13 @@
 // Service Worker: アプリ一式をキャッシュして、オフラインでも起動・記録できるようにする。
 // キャッシュ名にバージョンを付け、js/version.js の APP_VERSION を上げると新しいキャッシュに切り替わる。
-importScripts('./js/version.js');
+//
+// 【重要】公開するときは、下の SW_VERSION を js/version.js の APP_VERSION と同じ値に上げる。
+// 端末（とくに iPhone）は sw.js そのものの中身が変わったときだけ更新に気づくため、
+// version.js だけを変えると「更新があります」が出ない（v2.9.0・v2.9.1 で発生）。
+// 2 つの値がそろっているかは単体テスト（tests/sw.test.js）で確認する。
+const SW_VERSION = '2.9.2';
 
-const CACHE = `fitlog-v${self.APP_VERSION}`;
+const CACHE = `fitlog-v${SW_VERSION}`;
 
 // 事前にキャッシュするファイル（すべて相対パス）
 const ASSETS = [
