@@ -71,3 +71,17 @@ test('通知用の情報: 最後の記録日・今日から 30 日の予定・�
   const text = JSON.stringify(st);
   eq(['70.5', 'メモ', '秘密'].some((k) => text.includes(k)), false);
 });
+
+test('よく使うリンク: https だけ・名前がなければドメイン・6 件まで', async () => {
+  const { normalizeLinks } = await import('../js/storage.js');
+  const r = normalizeLinks([
+    { title: 'ジム', url: 'https://example.com/member/' },
+    { title: '危険', url: 'javascript:alert(1)' },
+    { title: '暗号化なし', url: 'http://example.com/' },
+    { title: '', url: 'https://example.org/a' },
+    ...Array.from({ length: 10 }, (_, i) => ({ title: `x${i}`, url: `https://example.net/${i}` })),
+  ]);
+  eq(r.slice(0, 2), [{ title: 'ジム', url: 'https://example.com/member/' }, { title: 'example.org', url: 'https://example.org/a' }]);
+  eq(r.length, 6);
+  eq(normalize({ ...defaultData() }).settings.links, []);
+});

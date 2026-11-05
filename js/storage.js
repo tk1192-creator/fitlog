@@ -26,6 +26,8 @@ export function defaultData() {
       reviewDismissed: null, // 先週のふりかえりを閉じた週（その週の月曜日）
       // 休みのお知らせ（v2.7.0）：days 日続けて休んだら知らせる。scope は 'strength'（筋トレだけ）か 'all'（運動すべて）
       restAlert: { enabled: true, days: 3, scope: 'strength' },
+      // よく使うリンク（v2.9.3）。ホームに表示する。{title, url}（https のみ、6 件まで）
+      links: [],
     },
     exercises: [...DEFAULT_EXERCISES],
     weights: [],
@@ -119,6 +121,7 @@ export function normalize(obj) {
       days: Math.min(14, Math.max(1, Math.round(num(s.restAlert && s.restAlert.days) || 3))),
       scope: s.restAlert && s.restAlert.scope === 'all' ? 'all' : 'strength',
     },
+    links: normalizeLinks(s.links),
   };
 
   const exercises = Array.isArray(obj.exercises)
@@ -201,6 +204,21 @@ export function normalize(obj) {
   for (const [k, v] of Object.entries(obj.settings || {})) if (!(k in base.settings)) extraSettings[k] = v;
 
   return { ...extra, schemaVersion: SCHEMA_VERSION, settings: { ...extraSettings, ...settings }, exercises, weights, strength, jogs, daily, plans, habits, habitLogs };
+}
+
+/** よく使うリンクの検証（https の URL だけ。名前は 20 文字、6 件まで） */
+export const LINK_MAX = 6;
+export function normalizeLinks(list) {
+  const out = [];
+  for (const l of Array.isArray(list) ? list : []) {
+    const url = str(l && l.url).trim();
+    let ok = false;
+    try { ok = new URL(url).protocol === 'https:'; } catch (_) { ok = false; }
+    if (!ok) continue;
+    out.push({ title: str(l.title).trim().slice(0, 20) || new URL(url).hostname, url });
+    if (out.length >= LINK_MAX) break;
+  }
+  return out;
 }
 
 const KNOWN_KEYS = ['schemaVersion', 'settings', 'exercises', 'weights', 'strength', 'jogs', 'daily', 'plans', 'habits', 'habitLogs'];

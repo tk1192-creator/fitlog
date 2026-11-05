@@ -78,6 +78,7 @@ export function render(root, app) {
   ));
 
   root.append(quickAdd(app));
+  root.append(linksCard(app));
   const today = todayCard(app);
   if (today) root.append(today);
   const review = reviewCard(app);
@@ -101,6 +102,20 @@ function heroStat(label, value, sub) {
     h('span', { class: 'hero-stat-value', text: value }),
     sub ? h('span', { class: 'hero-stat-sub', text: sub }) : null,
   );
+}
+
+/** よく使うリンク（設定で登録したもの。未登録なら追加の案内だけ） */
+function linksCard(app) {
+  const links = app.data.settings.links || [];
+  if (!links.length) {
+    return h('p', { class: 'links-empty' },
+      h('button', { type: 'button', class: 'linklike', text: '＋ よく使うリンクを追加（例：ジムの会員ページ）', onclick: () => app.navigate('settings', { focus: 'links' }) }));
+  }
+  return h('nav', { class: 'links-row', 'aria-label': 'よく使うリンク' },
+    links.map((l) => h('a', { class: 'link-chip', href: l.url, target: '_blank', rel: 'noopener noreferrer' },
+      h('span', { class: 'link-title', text: l.title }),
+      h('span', { class: 'link-host', text: new URL(l.url).hostname }),
+    )));
 }
 
 function quickAdd(app) {

@@ -1,6 +1,6 @@
 // 設定画面: プロフィール・目標、種目、データの入出力、危険な操作
 import { ACTIVITY_LEVELS, daysBetween, todayStr } from '../calc.js';
-import { defaultData, exportCSV, exportJSON, newId, normalize } from '../storage.js';
+import { LINK_MAX, defaultData, exportCSV, exportJSON, newId, normalize, normalizeLinks } from '../storage.js';
 import { REST_SCOPES, restAlertSettings } from '../plans.js';
 import { generateSample } from '../sample.js';
 import { clearAllTasks, clearDoneTasks, countDoneTasks, exportTasksJSON, loadTasks } from './home-tasks.js';
@@ -17,8 +17,48 @@ export function unmount() {
   if (unsubscribeCloud) { unsubscribeCloud(); unsubscribeCloud = null; }
 }
 
-export function render(root, app) {
-  root.append(cloudCard(app), habitCard(app), shareCard(app), profileCard(app), exerciseCard(app), lockCard(app), dataCard(app), taskDataCard(app), dangerCard(app), aboutCard());
+export function render(root, app, params = {}) {
+  const links = linksCard(app);
+  if (params.focus === 'links') requestAnimationFrame(() => links.scrollIntoView({ block: 'start' }));
+  root.append(cloudCard(app), links, habitCard(app), shareCard(app), profileCard(app), exerciseCard(app), lockCard(app), dataCard(app), taskDataCard(app), dangerCard(app), aboutCard());
+}
+
+/* ---------- よく使うリンク（v2.9.3）。ホームに表示する ---------- */
+
+function linksCard(app) {
+  const card = h('section', { class: 'card', id: 'links' }, h('h2', { class: 'card-title', text: 'よく使うリンク' }));
+  const links = app.data.settings.links || [];
+  card.append(h('p', { class: 'card-note', text: `ホームの記録ボタンの下に表示します（${LINK_MAX} 件まで）。登録したリンクは記録と一緒に暗号化して保存し、ほかの端末にも同期します。` }));
+  if (links.length) {
+    card.append(h('ul', { class: 'habit-edit-list' }, links.map((l, i) => h('li', { class: 'link-edit' },
+      h('span', { class: 'link-edit-text' }, h('strong', { text: l.title }), h('small', { text: l.url })),
+      h('button', {
+        type: 'button', class: 'btn btn-sm btn-danger', text: '削除',
+        onclick: async () => {
+          if (!await confirmDialog(`「${l.title}」をホームから外します。`, { title: 'リンクを削除', okText: '削除する', danger: true })) return;
+          app.update((d) => { d.settings.links = d.settings.links.filter((_, j) => j !== i); });
+          toast('削除しました');
+        },
+      }),
+    ))));
+  }
+  const title = h('input', { type: 'text', maxlength: '20', placeholder: '例：ジムの会員ページ' });
+  const url = h('input', { type: 'url', inputmode: 'url', placeholder: 'https://…', autocapitalize: 'off', spellcheck: 'false' });
+  const form = h('form', { class: 'form' },
+    field('名前', title),
+    field('URL（https で始まるもの）', url),
+    h('button', { type: 'submit', class: 'btn btn-primary btn-block', text: '＋ リンクを追加' }),
+  );
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const next = normalizeLinks([{ title: title.value, url: url.value }]);
+    if (!next.length) return toast('https:// で始まる URL を入れてください');
+    if (links.length >= LINK_MAX) return toast(`リンクは ${LINK_MAX} 件までです`);
+    app.update((d) => { d.settings.links = [...(d.settings.links || []), next[0]]; });
+    toast(`「${next[0].title}」をホームに追加しました`);
+  });
+  card.append(form);
+  return card;
 }
 
 /* ---------- 休みのお知らせ・習慣チェック（v2.7.0。js/plans.js） ---------- */
