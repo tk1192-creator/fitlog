@@ -68,7 +68,7 @@ test('インポート検証: 不正な記録を捨て、1 日 1 件に揃える'
   });
   eq([d.weights.length, d.strength.length, d.jogs.length], [1, 1, 1]);
   eq(d.exercises.includes('レッグプレス'), true);
-  eq(d.settings.heightCm, 165);
+  eq(d.settings.heightCm, null); // v2.2.0 から初期値なし
 });
 test('インポート検証: fitlog 以外のデータは例外', () => {
   let threw = false;

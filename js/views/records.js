@@ -114,7 +114,8 @@ function weightForm(app, editing) {
   const weight = numberInput('weightKg', editing?.weightKg, { placeholder: '例: 70.5', required: true, min: '20' });
   const updateBmi = () => {
     const v = bmi(Number(weight.value), heightCm);
-    bmiOut.textContent = v ? `BMI ${v}（身長 ${heightCm}cm で計算）` : `BMI は身長 ${heightCm}cm で自動計算します`;
+    bmiOut.textContent = !heightCm ? '設定で身長を入れると、BMI を自動で計算します'
+      : v ? `BMI ${v}（身長 ${heightCm}cm で計算）` : `BMI は身長 ${heightCm}cm で自動計算します`;
   };
   weight.addEventListener('input', updateBmi);
   updateBmi();

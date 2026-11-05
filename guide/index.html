@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="STRIDE（運動・体重・タスク管理アプリ）をはじめて使う方のための手引き">
+<meta name="theme-color" content="#0c2040">
+<title>はじめての手引き | STRIDE</title>
+<link rel="icon" type="image/png" sizes="192x192" href="../icons/icon-192.png">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #eef1f6; --surface: #ffffff; --surface-2: #f2f4f8; --border: #dde2ea;
+    --text: #0e1320; --muted: #4a5263; --subtle: #6b7385;
+    --accent: #2a78d6; --accent-soft: #e1ecfb; --danger: #c93a39; --danger-soft: #fbe9e9;
+    --warn-soft: #fdf3dc; --warn: #6b4a00;
+    --hero: linear-gradient(135deg, #0c2040 0%, #164a8c 55%, #2a78d6 100%);
+    --font: system-ui, -apple-system, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", Meiryo, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0a0e15; --surface: #131a25; --surface-2: #1b2331; --border: #253043;
+      --text: #eef2f8; --muted: #b4bdcc; --subtle: #8a94a6;
+      --accent: #5598e7; --accent-soft: #17304f; --danger: #e66767; --danger-soft: #361b1f;
+      --warn-soft: #362c16; --warn: #f2d9a0;
+      --hero: linear-gradient(135deg, #0b1830 0%, #133d75 55%, #2a6fc4 100%);
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 16px; line-height: 1.8; -webkit-text-size-adjust: 100%; }
+  a { color: var(--accent); }
+  .page { max-width: 720px; margin: 0 auto; padding: 0 16px 64px; }
+  header.hero {
+    margin: 0 -16px 20px; padding: calc(env(safe-area-inset-top, 0px) + 28px) 20px 24px;
+    background: var(--hero); color: #fff;
+  }
+  .hero .inner { max-width: 720px; margin: 0 auto; }
+  .brand { font: italic 800 12px/1 "SF Pro Display", "Segoe UI", system-ui, sans-serif; letter-spacing: .24em; opacity: .8; }
+  .brand b { color: #8fc0ff; font-style: normal; margin-left: 2px; }
+  h1 { margin: 10px 0 6px; font-size: 28px; line-height: 1.3; }
+  .hero p { margin: 0; opacity: .9; font-size: 15px; }
+  .open-app {
+    display: inline-block; margin-top: 16px; padding: 10px 18px; border-radius: 14px;
+    background: #fff; color: #0c2040; font-weight: 800; text-decoration: none;
+  }
+  nav.toc, section.card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 18px 18px; margin: 14px 0; }
+  nav.toc h2 { margin: 0 0 6px; font-size: 16px; }
+  nav.toc ol { margin: 0; padding-left: 1.4em; }
+  nav.toc li { margin: 4px 0; }
+  h2 { font-size: 20px; margin: 0 0 10px; display: flex; align-items: center; gap: 10px; scroll-margin-top: 16px; }
+  h2 .no { display: inline-grid; place-items: center; min-width: 30px; height: 30px; border-radius: 10px; background: var(--accent); color: #fff; font-size: 15px; }
+  h3 { font-size: 17px; margin: 18px 0 6px; }
+  ol.steps { padding-left: 1.4em; margin: 8px 0; }
+  ol.steps > li { margin: 10px 0; }
+  .shot {
+    margin: 10px 0; padding: 12px 14px; border: 2px dashed var(--border); border-radius: 12px;
+    background: var(--surface-2); color: var(--subtle); font-size: 14px;
+  }
+  .shot::before { content: "📷 スクリーンショットを入れる位置："; font-weight: 800; color: var(--muted); }
+  .note { padding: 10px 14px; border-radius: 12px; background: var(--accent-soft); font-size: 15px; margin: 10px 0; }
+  .warn { padding: 10px 14px; border-radius: 12px; background: var(--warn-soft); color: var(--warn); font-size: 15px; margin: 10px 0; }
+  .danger { padding: 10px 14px; border-radius: 12px; background: var(--danger-soft); color: var(--danger); font-weight: 700; font-size: 15px; margin: 10px 0; }
+  .btnlike { display: inline-block; padding: 0 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); font-weight: 700; font-size: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; margin: 8px 0; }
+  th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--surface-2); white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  dl.terms dt { font-weight: 800; margin-top: 10px; }
+  dl.terms dd { margin: 2px 0 0; color: var(--muted); }
+  .memo { border: 2px solid var(--border); border-radius: 12px; padding: 12px 14px; background: var(--surface-2); }
+  .memo div { margin: 4px 0; }
+  .memo b { display: inline-block; min-width: 7em; }
+  .admin { border-color: var(--accent); }
+  footer { margin-top: 28px; text-align: center; color: var(--subtle); font-size: 13px; }
+  code { font-family: Consolas, "SFMono-Regular", Menlo, monospace; font-size: 14px; background: var(--surface-2); padding: 1px 6px; border-radius: 6px; word-break: break-all; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="hero">
+  <div class="inner">
+    <div class="brand">STRIDE<b>›</b></div>
+    <h1>はじめての手引き</h1>
+    <p>運動・体重・食事・タスクを記録するアプリ「STRIDE」を、iPhone で使い始めるまでの手順です。上から順に進めてください（15 分ほど）。</p>
+    <a class="open-app" href="../">STRIDE を開く ›</a>
+  </div>
+</header>
+
+<nav class="toc" aria-label="目次">
+  <h2>目次</h2>
+  <ol>
+    <li><a href="#about">STRIDE でできること</a></li>
+    <li><a href="#prepare">用意するもの・言葉の説明</a></li>
+    <li><a href="#install">iPhone のホーム画面に追加する</a></li>
+    <li><a href="#cloud">記録の保存先を設定する（最初に必ず）</a></li>
+    <li><a href="#profile">プロフィールを入力する</a></li>
+    <li><a href="#record">記録をつける</a></li>
+    <li><a href="#features">便利な機能</a></li>
+    <li><a href="#trouble">してはいけないこと・困ったとき</a></li>
+    <li><a href="#admin">管理者向け：家族の保存先とトークンを用意する</a></li>
+  </ol>
+</nav>
+
+<section class="card" id="about">
+  <h2><span class="no">1</span>STRIDE でできること</h2>
+  <ul>
+    <li>体重・体脂肪率、筋トレ（重量・回数）、ジョギング（距離・時間）、食事のカロリー・歩数を記録する</li>
+    <li>グラフやカレンダーで変化を見る。自己ベストを更新するとお祝いの紙吹雪が出る</li>
+    <li>目標体重を決めると、目標までの残りや 1 日のカロリーの目安を表示する</li>
+    <li>やること（タスク）を管理する</li>
+  </ul>
+  <div class="note">記録は<strong>あなた専用の保存場所</strong>に暗号化して保存されます。家族の誰か（管理者を含む）が中身を見ることはできません。</div>
+</section>
+
+<section class="card" id="prepare">
+  <h2><span class="no">2</span>用意するもの・言葉の説明</h2>
+  <h3>家族（管理者）から受け取るメモ</h3>
+  <div class="memo">
+    <div><b>リポジトリ名</b>例：<code>tk1192-creator/stride-○○</code></div>
+    <div><b>トークン</b><code>github_pat_</code> で始まる長い文字列</div>
+  </div>
+  <div class="warn">トークンはパスワードと同じ大切なものです。AirDrop や手渡しのメモで受け取り、LINE やメールでは送らないようにしてください。</div>
+  <h3>自分で決めるもの</h3>
+  <div class="memo">
+    <div><b>合言葉</b>8 文字以上。自分だけが知っている言葉</div>
+  </div>
+  <div class="danger">合言葉を忘れると、記録を二度と開けなくなります。紙に書いて、なくさない場所に保管してください。</div>
+  <h3>言葉の説明</h3>
+  <dl class="terms">
+    <dt>リポジトリ</dt><dd>記録を保存しておく「箱」のこと。インターネット上（GitHub というサービス）にあり、あなた専用で他の人には見えません（非公開）。</dd>
+    <dt>トークン</dt><dd>その箱に記録を書き込むための「鍵」。あなたの箱にだけ使えます。</dd>
+    <dt>合言葉</dt><dd>記録を暗号化する（他の人が読めないようにする）ための言葉。箱の中身は、この合言葉がないと読めません。</dd>
+    <dt>ホーム画面に追加</dt><dd>ウェブのページを、アプリのようにアイコンから開けるようにすること。電波がなくても使えます。</dd>
+  </dl>
+</section>
+
+<section class="card" id="install">
+  <h2><span class="no">3</span>iPhone のホーム画面に追加する</h2>
+  <ol class="steps">
+    <li><strong>Safari</strong>（青いコンパスのアイコン）で、次のアドレスを開きます。<br><code>https://tk1192-creator.github.io/fitlog/</code>
+      <div class="shot">Safari で STRIDE を開いたところ（画面上部に「Safari で開いています」の案内が出ている）</div>
+    </li>
+    <li>画面の下にある<strong>共有ボタン</strong>（四角から上向きの矢印が出ているアイコン）をタップします。
+      <div class="shot">共有ボタンの位置を赤丸で示した画面</div>
+    </li>
+    <li>出てきたメニューを上にスクロールし、<strong>「ホーム画面に追加」</strong>をタップします。
+      <div class="shot">メニューの中の「ホーム画面に追加」</div>
+    </li>
+    <li>名前が「STRIDE」になっていることを確認して、右上の<strong>「追加」</strong>をタップします。</li>
+    <li>ホーム画面に STRIDE のアイコン（青い四角に白い矢印）ができます。<strong>これ以降は、必ずこのアイコンから開いてください。</strong>
+      <div class="shot">ホーム画面に追加された STRIDE のアイコン</div>
+    </li>
+  </ol>
+  <div class="warn">Safari で開いたまま記録をつけると、ホーム画面のアイコンから開いたときに表示されません（保存場所が別のため）。</div>
+</section>
+
+<section class="card" id="cloud">
+  <h2><span class="no">4</span>記録の保存先を設定する（最初に必ず）</h2>
+  <p>この設定をしないと、記録は iPhone の中にしか残らず、アイコンを消したときに一緒に消えてしまいます。</p>
+  <ol class="steps">
+    <li>ホーム画面の <strong>STRIDE アイコン</strong>から開きます。</li>
+    <li>画面いちばん下の右端にある <span class="btnlike">⚙ 設定</span> をタップします。</li>
+    <li>いちばん上の「<strong>記録の保存先（GitHub）</strong>」の欄に、次のとおり入力します。
+      <div class="scroll"><table>
+        <tr><th>欄</th><th>入れるもの</th></tr>
+        <tr><td>リポジトリ</td><td>受け取ったメモの「リポジトリ名」（例：<code>tk1192-creator/stride-○○</code>）</td></tr>
+        <tr><td>トークン</td><td>受け取ったメモの <code>github_pat_…</code>（長押し →「ペースト」で貼り付けると確実です）</td></tr>
+        <tr><td>合言葉</td><td>自分で決めた合言葉</td></tr>
+        <tr><td>合言葉（確認）</td><td>同じ合言葉をもう一度</td></tr>
+      </table></div>
+      <div class="shot">「記録の保存先（GitHub）」の入力欄に入力したところ</div>
+    </li>
+    <li>「タスクも暗号化して保存する」は、チェックを入れなくてかまいません（タスクを使う人だけ）。</li>
+    <li><span class="btnlike">接続して保存を始める</span> をタップします。</li>
+    <li>「GitHub への保存を始めました」と出て、画面左上の「STRIDE›」の横にある<strong>雲のアイコンが青</strong>になれば完了です。
+      <div class="shot">設定完了後の画面（「GitHub に保存：保存済み」と雲のアイコンが青）</div>
+    </li>
+  </ol>
+  <h3>雲のアイコンの見方</h3>
+  <div class="scroll"><table>
+    <tr><th>色</th><th>意味</th></tr>
+    <tr><td>青</td><td>保存済み（安心してください）</td></tr>
+    <tr><td>点滅</td><td>保存中・保存待ち</td></tr>
+    <tr><td>灰色</td><td>電波がない。つながったら自動で保存します</td></tr>
+    <tr><td>赤</td><td>未設定、またはエラー。タップすると設定画面が開きます</td></tr>
+  </table></div>
+</section>
+
+<section class="card" id="profile">
+  <h2><span class="no">5</span>プロフィールを入力する</h2>
+  <ol class="steps">
+    <li><span class="btnlike">⚙ 設定</span> の「<strong>プロフィール・目標</strong>」に、身長・年齢を入力します。</li>
+    <li>目標体重（と、あれば目標の日付）、週に何日運動したいか、1 日の歩数の目標を入れます。</li>
+    <li>カロリーの目安を出したい場合は、性別と活動レベル（ふだんどのくらい体を動かすか）も選びます。</li>
+    <li><span class="btnlike">設定を保存</span> をタップします。
+      <div class="shot">「プロフィール・目標」の入力欄</div>
+    </li>
+  </ol>
+</section>
+
+<section class="card" id="record">
+  <h2><span class="no">6</span>記録をつける</h2>
+  <ol class="steps">
+    <li><span class="btnlike">⌂ ホーム</span> の「体重」「筋トレ」「ジョギング」のボタン、または下の <span class="btnlike">＋ 記録</span> をタップします。</li>
+    <li>上の切り替え（体重／筋トレ／ジョギング／食事・歩数）で、記録する種類を選びます。</li>
+    <li>数字を入れて <span class="btnlike">保存する</span> をタップします。日付は最初から「今日」になっています。
+      <div class="shot">体重の記録画面（日付・体重・体脂肪率の欄と「保存する」ボタン）</div>
+    </li>
+    <li>まちがえたときは、記録画面の下の一覧から該当の記録をタップすると、直したり消したりできます。</li>
+  </ol>
+  <div class="note">記録すると、数秒後に自動で保存先に保存されます（雲のアイコンが青に戻れば保存済み）。</div>
+</section>
+
+<section class="card" id="features">
+  <h2><span class="no">7</span>便利な機能</h2>
+  <div class="scroll"><table>
+    <tr><th>画面</th><th>できること</th></tr>
+    <tr><td>グラフ</td><td>体重の変化、筋トレの重量の伸び、ジョギングの距離、食事・歩数。上のボタンで期間（1 か月〜全期間）を切り替え</td></tr>
+    <tr><td>カレンダー</td><td>運動した日に印が付きます。日付をタップするとその日の記録</td></tr>
+    <tr><td>タスク</td><td>やることの管理。右下の「＋」で追加</td></tr>
+    <tr><td>設定 → Face ID でロック</td><td>アプリを開くときに顔認証を求めます（人に iPhone を貸すときに安心）</td></tr>
+  </table></div>
+</section>
+
+<section class="card" id="trouble">
+  <h2><span class="no">8</span>してはいけないこと・困ったとき</h2>
+  <div class="danger">保存先の設定（手順 4）が終わる前に、ホーム画面の STRIDE アイコンを削除しないでください。記録が消えます。</div>
+  <div class="scroll"><table>
+    <tr><th>困ったこと</th><th>どうするか</th></tr>
+    <tr><td>アイコンを消してしまった・iPhone を買い替えた</td><td>手順 3 でもう一度ホーム画面に追加し、手順 4 で<strong>同じリポジトリ名・トークン・合言葉</strong>を入れます。「GitHub に記録があります」と出たら「<strong>GitHub の記録を使う</strong>」を選ぶと、記録が戻ります</td></tr>
+    <tr><td>「更新があります」と出た</td><td>「再読み込み」をタップします（記録は消えません）</td></tr>
+    <tr><td>雲のアイコンが赤で「トークンが無効か期限切れ」</td><td>トークンの期限切れです。家族（管理者）に新しいトークンをもらい、設定で「この端末の接続を解除」→ 手順 4 をやり直します</td></tr>
+    <tr><td>「合言葉が違います」と出る</td><td>最初に決めた合言葉と違います。控えたメモを確認してください</td></tr>
+    <tr><td>記録が表示されない</td><td>Safari で開いていないか確認し、ホーム画面のアイコンから開き直します</td></tr>
+  </table></div>
+</section>
+
+<section class="card admin" id="admin">
+  <h2><span class="no">9</span>管理者向け：家族の保存先とトークンを用意する</h2>
+  <p>家族の保存先（非公開リポジトリ）は、管理者の GitHub アカウントに作ります。家族は GitHub のアカウントがなくても使えます。</p>
+  <h3>トークンを作る（家族 1 人につき 1 つ）</h3>
+  <ol class="steps">
+    <li>パソコンで <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub のトークン作成画面</a>を開きます（GitHub にサインインした状態で）。</li>
+    <li><strong>Token name</strong>：わかる名前（例：<code>STRIDE-家族の呼び名</code>）。<strong>Expiration</strong>：1 年以内。</li>
+    <li><strong>Repository access</strong>：「Only select repositories」→ その家族のリポジトリ（例：<code>stride-○○</code>）<strong>だけ</strong>を選びます。</li>
+    <li><strong>Permissions</strong>：Repository permissions の「<strong>Contents</strong>」を「<strong>Read and write</strong>」にします（「Metadata：Read-only」は自動で付きます）。ほかは変えません。</li>
+    <li><span class="btnlike">Generate token</span> を押し、表示された <code>github_pat_…</code> をコピーします（この画面を閉じると二度と表示されません）。</li>
+  </ol>
+  <h3>家族に渡す</h3>
+  <ul>
+    <li>リポジトリ名とトークンを、<strong>AirDrop か手書きのメモ</strong>で渡します。LINE・メールでは送らないでください。</li>
+    <li>合言葉は家族自身に決めてもらい、管理者は聞かないでください（中身が読めない状態を保つため）。</li>
+    <li>トークンの期限が近づいたら、同じ手順で作り直して渡します。古いトークンは GitHub の画面から削除します。</li>
+  </ul>
+  <div class="note">管理者は保存先（箱）を管理できますが、中身は家族の合言葉で暗号化されているため読めません。</div>
+</section>
+
+<footer>
+  <a href="../">STRIDE を開く</a>　／　この手引きは STRIDE の「設定 → このアプリについて」からも開けます。
+</footer>
+
+</div>
+</body>
+</html>

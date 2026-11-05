@@ -10,8 +10,8 @@ export function defaultData() {
   return {
     schemaVersion: SCHEMA_VERSION,
     settings: {
-      heightCm: 165,
-      age: 52,
+      heightCm: null, // 初回に設定画面で入力してもらう（v2.2.0 で初期値 165cm・52 歳を廃止）
+      age: null,
       targetWeightKg: null,
       targetDate: null,
       weeklyGoalDays: 3,

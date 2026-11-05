@@ -26,6 +26,14 @@ function safetyCards(app) {
       h('h2', { class: 'card-title', text: '記録を GitHub に保存しましょう' }),
       h('p', { class: 'card-note', text: '今は記録がこの端末の中にしかありません。ホーム画面のアイコンを削除すると記録も消えます。GitHub への保存を設定すると、入れ直しても PC からでも同じ記録を使えます。' }),
       h('button', { type: 'button', class: 'btn btn-primary btn-block', text: '保存先を設定する', onclick: () => app.navigate('settings') }),
+      h('p', { class: 'card-note center' }, h('a', { href: './guide/', text: 'はじめての手引きを見る' })),
+    ));
+  }
+  if (!app.data.settings.heightCm) {
+    cards.push(h('section', { class: 'card' },
+      h('h2', { class: 'card-title', text: 'プロフィールを入力しましょう' }),
+      h('p', { class: 'card-note', text: '身長・年齢・目標体重を入れると、BMI や目標までの残り、カロリーの目安を表示します。' }),
+      h('button', { type: 'button', class: 'btn btn-block', text: 'プロフィールを入力する', onclick: () => app.navigate('settings') }),
     ));
   }
   return cards;

@@ -45,6 +45,9 @@ const ASSETS = [
   './tasks/stride-bridge.js',
   './tasks/stride-bridge.css',
   './tasks/manual.html',
+  // はじめての手引き
+  './guide/',
+  './guide/index.html',
 ];
 
 self.addEventListener('install', (event) => {

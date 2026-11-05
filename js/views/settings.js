@@ -40,7 +40,8 @@ function cloudCard(app) {
 
   if (!cfg) {
     const user = location.hostname.endsWith('.github.io') ? location.hostname.split('.')[0] : 'ユーザー名';
-    const repo = h('input', { type: 'text', value: `${user}/stride-backup`, autocomplete: 'off', autocapitalize: 'off', spellcheck: false });
+    // 家族など複数人で使うため、初期値は入れず記入例だけを示す（他の人の保存先を誤って入れないように）
+    const repo = h('input', { type: 'text', placeholder: `例: ${user}/stride-○○`, autocomplete: 'off', autocapitalize: 'off', spellcheck: false });
     const token = h('input', { type: 'password', placeholder: 'github_pat_…', autocomplete: 'off' });
     const pass = h('input', { type: 'password', placeholder: '8 文字以上', autocomplete: 'new-password' });
     const pass2 = h('input', { type: 'password', placeholder: 'もう一度', autocomplete: 'new-password' });
@@ -102,10 +103,11 @@ function cloudCard(app) {
     card.append(
       h('p', { class: 'notice notice-warn', text: '⚠ 未設定：記録はこの端末の中にしかありません。ホーム画面のアイコンを削除すると記録も消えます。' }),
       h('p', { class: 'card-note', text: '記録を暗号化して、あなたの GitHub の非公開リポジトリに自動で保存します。アプリを入れ直しても、PC からでも、同じ記録を使えます。' }),
+      h('p', { class: 'card-note' }, '初めての方は ', h('a', { href: './guide/', text: 'はじめての手引き' }), ' を見ながら設定してください。'),
       h('ol', { class: 'cloud-steps' },
-        h('li', {}, 'GitHub で ', h('a', { href: 'https://github.com/settings/personal-access-tokens/new', target: '_blank', rel: 'noopener', text: 'トークンを作る' }), '（Fine-grained token）。対象リポジトリは「stride-backup だけ」、権限は「Contents：Read and write」、期限は 1 年まで'),
+        h('li', { text: 'リポジトリ名とトークンを用意する（家族から受け取ったメモ、または自分で作ったもの）' }),
         h('li', { text: '下の欄にリポジトリ名・トークン・合言葉を入れて「接続して保存を始める」を押す' }),
-        h('li', { text: '合言葉は忘れないように控えておく（忘れると GitHub の記録を開けません）' }),
+        h('li', { text: '合言葉は忘れないように紙などに控えておく（忘れると GitHub の記録を開けません）' }),
       ),
       h('div', { class: 'form' },
         field('リポジトリ（ユーザー名/リポジトリ名）', repo),
@@ -311,8 +313,8 @@ function profileCard(app) {
   const n = (name, value, attrs = {}) => h('input', { type: 'number', name, value: value == null ? '' : String(value), inputmode: 'decimal', ...attrs });
   const form = h('form', { class: 'form', novalidate: true },
     h('div', { class: 'row-2' },
-      field('身長 (cm)', n('heightCm', s.heightCm, { step: '0.1', min: '100', max: '250', required: true })),
-      field('年齢', n('age', s.age, { step: '1', min: '1', max: '120', inputmode: 'numeric', required: true })),
+      field('身長 (cm)', n('heightCm', s.heightCm, { step: '0.1', min: '100', max: '250', required: true, placeholder: '例: 160' })),
+      field('年齢', n('age', s.age, { step: '1', min: '1', max: '120', inputmode: 'numeric', required: true, placeholder: '例: 45' })),
     ),
     h('div', { class: 'row-2' },
       field('目標体重 (kg)', n('targetWeightKg', s.targetWeightKg, { step: '0.1', min: '20', max: '300', placeholder: '未設定' })),
@@ -513,6 +515,7 @@ function aboutCard() {
   return h('section', { class: 'card' },
     h('h2', { class: 'card-title', text: 'このアプリについて' }),
     h('p', { class: 'card-note', text: `STRIDE バージョン ${self.APP_VERSION || '-'}` }),
+    h('p', { class: 'card-note' }, h('a', { href: './guide/', text: 'はじめての手引き（使い方・設定のしかた）' })),
     h('p', { class: 'card-note', text: '記録はサーバーに送信されません。グラフは Chart.js（MIT License）、紙吹雪は canvas-confetti（ISC License）を使用しています。' }),
   );
 }
