@@ -700,6 +700,29 @@ export async function connect(found, { includeTasks, mode, restoreTasks }) {
   return syncNow();
 }
 
+/**
+ * トークンだけを入れ直す（期限切れ・対象のリポジトリを増やしたときなど）。記録・合言葉の鍵はそのまま。
+ * 新しいトークンで今の保存先が見えること（非公開であること）を確かめてから切り替える。
+ */
+export async function replaceToken(token) {
+  const cfg = getConfig();
+  if (!cfg) throw new Error('まだ保存先を設定していません');
+  const next = { ...cfg, token: token.trim() };
+  if (!/^github_pat_|^ghp_/.test(next.token)) throw new Error('トークンは github_pat_ で始まる文字列です');
+  let info;
+  try {
+    info = await getRepo(next);
+  } catch (e) {
+    if (e.status === 401) throw new Error('このトークンは使えません（期限切れか、打ち間違い）');
+    if (e.status === 404) throw new Error(`このトークンでは ${cfg.repo} が見えません。トークンの対象に入れてください`);
+    throw e;
+  }
+  if (!info.private) throw new Error('保存先が公開リポジトリになっています');
+  setConfig(next);
+  setState({ lastError: null });
+  return syncNow();
+}
+
 /** 接続を解除する（この端末のトークンと鍵を消す。GitHub の記録と端末の写しは残る） */
 export function disconnect() {
   localStorage.removeItem(CONFIG_KEY);

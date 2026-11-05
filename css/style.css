@@ -828,3 +828,7 @@ body.sheet-open .toast { z-index: 70; }
 .fm-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; margin-top: 8px; }
 textarea { width: 100%; min-height: 52px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); font-size: 16px; resize: vertical; }
 .fm-form .btn { min-height: 52px; }
+
+/* 設定：トークンを入れ直す（v2.10.1） */
+.token-replace { margin: 12px 0 4px; }
+.token-replace summary { cursor: pointer; color: var(--accent); font-weight: 700; font-size: 14px; }

@@ -5,7 +5,7 @@
 // 端末（とくに iPhone）は sw.js そのものの中身が変わったときだけ更新に気づくため、
 // version.js だけを変えると「更新があります」が出ない（v2.9.0・v2.9.1 で発生）。
 // 2 つの値がそろっているかは単体テスト（tests/sw.test.js）で確認する。
-const SW_VERSION = '2.10.0';
+const SW_VERSION = '2.10.1';
 
 const CACHE = `fitlog-v${SW_VERSION}`;
 

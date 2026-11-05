@@ -117,7 +117,9 @@ export async function connectFamily({ repo, passphrase, name }) {
   try {
     info = await cloud.gh.getRepo(cfg);
   } catch (e) {
-    if (e.status === 404) throw new Error('家族の部屋が見つかりません。リポジトリ名を確認するか、管理者にトークンの対象へ家族の部屋を足してもらってください');
+    if (e.status === 404) {
+      throw new Error(`この端末のトークンでは「${cfg.repo}」が見えません。①部屋の名前（半角・空白なし）を確かめる、②このトークンの対象に家族の部屋が入っているかを管理者に確かめてもらう（入っていなければ、対象を 2 つにした新しいトークンを作り、設定の「トークンを入れ直す」で入れ替える）`);
+    }
     throw e;
   }
   if (!info.private) throw new Error('家族の部屋は非公開（Private）のリポジトリにしてください');

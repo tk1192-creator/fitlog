@@ -78,7 +78,7 @@ testSeq('家族: 公開リポジトリ・見つからない部屋には入れな
   try { await family.connectFamily({ repo: 'me/stride-open', passphrase: 'family-pass', name: 'パパ' }); } catch (e) { msg = e.message; }
   eq(msg.includes('非公開'), true, msg);
   try { await family.connectFamily({ repo: 'me/nothing', passphrase: 'family-pass', name: 'パパ' }); } catch (e) { msg = e.message; }
-  eq(msg.includes('見つかりません'), true, msg);
+  eq(msg.includes('見えません') && msg.includes('トークンを入れ直す'), true, msg);
 });
 testSeq('家族: 最初の人が部屋を始め、メッセージは暗号化して置く（名前・種類・スタンプは読める）', async () => {
   const r = await family.connectFamily({ repo: 'me/stride-family', passphrase: 'family-pass', name: 'パパ' });
@@ -119,6 +119,15 @@ testSeq('家族: 3 か月より前の月のフォルダは整理で消える', a
   await family.syncFamily();
   eq([...gh.files.keys()].some((k) => k.includes('messages/2026-01/')), false);
   eq([...gh.files.keys()].filter((k) => k.includes(':messages/')).length, 3, '新しいメッセージは残る');
+});
+testSeq('トークンの入れ直し: 保存先が見えないトークンは断り、見えるトークンに切り替える', async () => {
+  useMember('me/stride-family'); // 偽の GitHub で見える保存先として使う
+  let msg = '';
+  try { await cloud.replaceToken('github_pat_wrong'); } catch (e) { msg = e.message; }
+  eq(msg.includes('使えません'), true, msg);
+  try { await cloud.replaceToken('abc'); } catch (e) { msg = e.message; }
+  eq(msg.includes('github_pat_'), true, msg);
+  eq(cloud.getConfig().token, 'test-token');
 });
 testSeq('家族: 後片付け（端末のデータを元に戻す）', async () => {
   delete globalThis.__strideFetch;

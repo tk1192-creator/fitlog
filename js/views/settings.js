@@ -9,6 +9,7 @@ import * as cloud from '../cloud.js';
 import { connectFamily, disconnectFamily, familyConfig, setFamilyName } from '../family.js';
 
 const BACKUP_REMIND_DAYS = 14;
+const FAMILY_ROOM_DEFAULT = 'tk1192-creator/stride-family'; // 家族の部屋（v2.10.1。利用者の指定）
 const TASK_IMPORT_KEY = 's-task-import'; // タスク画面へ渡すインポート用ファイル（sessionStorage）
 const TASK_IMPORT_MAX = 4 * 1024 * 1024; // sessionStorage に収まる大きさ（目安）
 
@@ -51,13 +52,14 @@ function familySettingsCard(app) {
     );
     return card;
   }
-  const repo = h('input', { type: 'text', placeholder: '例：ユーザー名/stride-family', autocapitalize: 'off', spellcheck: 'false' });
+  // 家族の部屋は 1 つだけなので、名前を最初から入れておく（打ち間違いを防ぐ。v2.10.1）
+  const repo = h('input', { type: 'text', value: FAMILY_ROOM_DEFAULT, autocapitalize: 'off', spellcheck: 'false' });
   const name = h('input', { type: 'text', maxlength: '20', placeholder: '例：パパ', value: (app.data.settings.share && app.data.settings.share.name) || '' });
   const pass = h('input', { type: 'password', placeholder: '家族で決めた合言葉（8 文字以上）', autocomplete: 'new-password' });
   const pass2 = h('input', { type: 'password', placeholder: 'もう一度', autocomplete: 'new-password' });
   const btn = h('button', { type: 'submit', class: 'btn btn-primary btn-block', text: '家族の部屋に入る' });
   const form = h('form', { class: 'form' },
-    field('家族の部屋（リポジトリ）', repo, '管理者から聞いた名前'),
+    field('家族の部屋（リポジトリ）', repo, 'ふつうはこのままで構いません'),
     field('家族に表示する名前', name),
     h('div', { class: 'row-2' }, field('家族の合言葉', pass), field('家族の合言葉（確認）', pass2)),
     btn,
@@ -258,6 +260,31 @@ function countOf(data) {
   return (data.weights?.length || 0) + (data.strength?.length || 0) + (data.jogs?.length || 0) + (data.daily?.length || 0);
 }
 
+/** トークンだけを入れ直す（記録・合言葉はそのまま） */
+function tokenReplaceBox(app) {
+  const input = h('input', { type: 'password', placeholder: 'github_pat_…（新しいトークン）', autocomplete: 'off', 'aria-label': '新しいトークン' });
+  const btn = h('button', { type: 'submit', class: 'btn', text: '入れ替える' });
+  const form = h('form', { class: 'inline-form' }, input, btn);
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!input.value.trim()) return toast('新しいトークンを貼り付けてください');
+    btn.disabled = true;
+    try {
+      await cloud.replaceToken(input.value);
+      toast('トークンを入れ替えました');
+      app.render();
+    } catch (err) {
+      toast(err.message || '入れ替えられませんでした');
+      btn.disabled = false;
+    }
+  });
+  return h('details', { class: 'token-replace' },
+    h('summary', { text: 'トークンを入れ直す（期限切れ・家族の部屋を追加したとき）' }),
+    h('p', { class: 'card-note', text: '新しいトークンを貼り付けて「入れ替える」を押します。記録と合言葉はそのままです。' }),
+    form,
+  );
+}
+
 function cloudCard(app) {
   const card = h('section', { class: 'card', id: 'cloud-card' },
     h('h2', { class: 'card-title', text: '記録の保存先（GitHub）' }),
@@ -391,6 +418,7 @@ function cloudCard(app) {
         },
       }),
     ),
+    tokenReplaceBox(app),
     notifySection(app),
     h('p', { class: 'card-note' }, '歩数をヘルスケアから自動で取り込む方法は ', h('a', { href: './guide/#steps', text: '手引きの「歩数の自動取り込み」' }), ' を見てください。'),
   );
