@@ -8,5 +8,6 @@ import './trend.test.js';
 import './badges.test.js';
 import './plans.test.js';
 import './sw.test.js';
+import './family.test.js';
 
 report();

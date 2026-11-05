@@ -5,7 +5,7 @@
 // 端末（とくに iPhone）は sw.js そのものの中身が変わったときだけ更新に気づくため、
 // version.js だけを変えると「更新があります」が出ない（v2.9.0・v2.9.1 で発生）。
 // 2 つの値がそろっているかは単体テスト（tests/sw.test.js）で確認する。
-const SW_VERSION = '2.9.3';
+const SW_VERSION = '2.10.0';
 
 const CACHE = `fitlog-v${SW_VERSION}`;
 
@@ -23,6 +23,7 @@ const ASSETS = [
   './js/badges.js',
   './js/review.js',
   './js/plans.js',
+  './js/family.js',
   './js/app.js',
   './js/calc.js',
   './js/storage.js',
@@ -36,6 +37,7 @@ const ASSETS = [
   './js/views/home-goal.js',
   './js/views/home-review.js',
   './js/views/home-today.js',
+  './js/views/home-family.js',
   './js/views/track.js',
   './fonts/barlow-condensed-latin-600-normal.woff2',
   './fonts/barlow-condensed-latin-700-normal.woff2',
@@ -150,7 +152,10 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil((async () => {
     const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     for (const w of wins) {
-      if (w.url.startsWith(self.registration.scope) && 'focus' in w) return w.focus();
+      if (w.url.startsWith(self.registration.scope) && 'focus' in w) {
+        w.postMessage({ type: 'stride-open', url }); // 開いている画面に、開く場所（#family など）を伝える
+        return w.focus();
+      }
     }
     return self.clients.openWindow(url);
   })());

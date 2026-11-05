@@ -4,6 +4,7 @@ import { fmtDateShort, h } from '../ui.js';
 import { goalCards, signed } from './home-goal.js';
 import { reviewCard } from './home-review.js';
 import { todayCard } from './home-today.js';
+import { familyCard } from './home-family.js';
 import { tasksCard } from './home-tasks.js';
 import { getConfig as cloudConfig } from '../cloud.js';
 
@@ -79,6 +80,8 @@ export function render(root, app) {
 
   root.append(quickAdd(app));
   root.append(linksCard(app));
+  const family = familyCard(app);
+  if (family) root.append(...[].concat(family));
   const today = todayCard(app);
   if (today) root.append(today);
   const review = reviewCard(app);

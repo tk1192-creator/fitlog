@@ -201,8 +201,8 @@ async function getFile(cfg, path) {
 }
 
 /** ファイルを書く（sha を渡すと、その版からの更新。版が進んでいれば 409） */
-async function putFile(cfg, path, text, sha) {
-  const body = { message: `STRIDE 自動保存 ${new Date().toISOString()}`, content: bytesToB64(new TextEncoder().encode(text)) };
+async function putFile(cfg, path, text, sha, message) {
+  const body = { message: message || `STRIDE 自動保存 ${new Date().toISOString()}`, content: bytesToB64(new TextEncoder().encode(text)) };
   if (sha) body.sha = sha;
   const j = await ghJSON(await http(`https://api.github.com/repos/${cfg.repo}/contents/${path}`, {
     method: 'PUT', headers: { ...headers(cfg.token), 'Content-Type': 'application/json' }, body: JSON.stringify(body),
@@ -224,6 +224,23 @@ async function deleteFile(cfg, path, sha) {
     body: JSON.stringify({ message: `STRIDE 自動整理 ${new Date().toISOString()}`, sha }),
   });
   if (!res.ok && res.status !== 404) await ghJSON(res);
+}
+
+/** 家族の部屋（js/family.js）から使う GitHub の操作（v2.10.0） */
+export const gh = { getRepo, getFile, putFile, listDir, deleteFile };
+export { importRawKey, sha256Hex, saltOf };
+
+/* ---------- 同期・通知の登録に、ほかの機能の処理を足すための口（v2.10.0） ---------- */
+const extraSyncSteps = [];
+const notifyHooks = [];
+/** 同期のたびに呼ぶ処理を足す（失敗しても記録の同期は止めない） */
+export function addSyncStep(fn) { extraSyncSteps.push(fn); }
+/** 通知の登録・解除のときに呼ぶ処理を足す。fn({ on, subscription, deviceId, device }) */
+export function onNotifyChange(fn) { notifyHooks.push(fn); }
+async function runNotifyHooks(info) {
+  for (const fn of notifyHooks) {
+    try { await fn(info); } catch (e) { console.warn('通知の登録の追加処理に失敗しました', e); }
+  }
 }
 
 /* ======================================================================
@@ -309,6 +326,9 @@ export async function syncNow() {
         await updateNotifyStatus();
         await syncShare();
       } while (again);
+      for (const step of extraSyncSteps) {
+        try { await step(); } catch (e) { console.warn('追加の同期に失敗しました', e); }
+      }
       setState({ lastSyncAt: new Date().toISOString(), lastError: null });
       setStatus('ok');
     } catch (e) {
@@ -585,7 +605,18 @@ export async function enableNotify() {
   await putFile(cfg, path, JSON.stringify({ subscription: sub.toJSON(), device: label, createdAt: new Date().toISOString() }), cur ? cur.sha : null);
   await writeNotifyStatus(cfg, notifyStatusOf(loadLocal()));
   setConfig({ ...getConfig(), notify: { deviceId: id } });
+  await runNotifyHooks({ on: true, subscription: sub.toJSON(), deviceId: id, device: label });
   notify();
+}
+
+/** この端末の通知の登録情報（登録していなければ null） */
+export async function currentSubscription() {
+  if (!isNotifyOn() || !('serviceWorker' in navigator)) return null;
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.getSubscription();
+  if (!sub) return null;
+  const label = /iPhone/.test(navigator.userAgent) ? 'iPhone' : /iPad/.test(navigator.userAgent) ? 'iPad' : 'PC';
+  return { subscription: sub.toJSON(), deviceId: getConfig().notify.deviceId, device: label };
 }
 
 /** 通知をオフにする（この端末だけ） */
@@ -602,6 +633,7 @@ export async function disableNotify() {
   if (cur) await deleteFile(cfg, path, cur.sha);
   const { notify: _drop, ...rest } = cfg;
   setConfig(rest);
+  await runNotifyHooks({ on: false, deviceId: cfg.notify.deviceId });
 }
 
 /* ======================================================================

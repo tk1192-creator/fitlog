@@ -231,6 +231,15 @@
     <tr><td>タスク</td><td>やることの管理。右下の「＋」で追加</td></tr>
     <tr><td>設定 → Face ID でロック</td><td>アプリを開くときに顔認証を求めます（人に iPhone を貸すときに安心）</td></tr>
   </table></div>
+  <h3 id="family-room">家族の部屋（メッセージ・応援スタンプ）</h3>
+  <p>家族どうしで、ひとことメッセージと応援スタンプ（👏🔥💪🎉👍😊）を送り合えます。体重などの記録は共有されません。</p>
+  <ol class="steps">
+    <li><span class="btnlike">⚙ 設定</span> →「<strong>家族の部屋（メッセージ・応援）</strong>」に、管理者から聞いた家族の部屋の名前（例：<code>tk1192-creator/stride-family</code>）、家族に表示する名前、<strong>家族の合言葉</strong>（家族全員で同じもの）を入れて <span class="btnlike">家族の部屋に入る</span> をタップします。</li>
+    <li>ホームに「<strong>家族</strong>」のカードが出ます。スタンプはタップするだけで送れます。<span class="btnlike">メッセージを読む・送る</span> でやりとりの一覧が開き、ひとことを送れます。</li>
+    <li>通知をオンにしている端末には、家族からメッセージが届くと通知が来ます（数分遅れることがあります）。</li>
+  </ol>
+  <div class="note">メッセージは家族の合言葉で暗号化して保存します。3 か月より前のメッセージは自動で消えます。家族の合言葉を忘れると、過去のメッセージは読めなくなります。</div>
+
   <h3 id="plans">運動の予定・休みのお知らせ・習慣チェック</h3>
   <div class="scroll"><table>
     <tr><th>機能</th><th>使い方</th></tr>
@@ -372,6 +381,15 @@
     <li>家族に、手順 8 で「この端末で通知を受け取る」を押してもらいます。</li>
     <li>テスト通知を送るとき：<code>gh workflow run remind.yml -R tk1192-creator/stride-○○ -f test=true</code></li>
   </ol>
+  <h3>家族の部屋の準備（最初に 1 回）</h3>
+  <ol class="steps">
+    <li>パソコンで、STRIDE のフォルダ（<code>fitlog</code>）を開いた PowerShell で次を実行します（1 つ目が家族の部屋、2 つ目以降が家族それぞれの保存先）。<br><code>python tools/notify/setup_family.py tk1192-creator/stride-family tk1192-creator/stride-○○ tk1192-creator/stride-△△</code><br>「続けますか？」と聞かれたら <code>y</code>。家族の部屋（非公開）を作り、通知の鍵を家族全員で共通のものに作り直します。</li>
+    <li>GitHub のトークンの一覧（<a href="https://github.com/settings/personal-access-tokens" target="_blank" rel="noopener">Fine-grained tokens</a>）で、家族それぞれのトークンを開いて「<strong>Edit</strong>」→ Repository access に <code>stride-family</code> を追加 →「<strong>Update</strong>」。権限は今のまま（Contents：Read and write）で使えます。画面の名前は変わることがあります（要確認）。</li>
+    <li>鍵を作り直したので、通知を受け取っている端末は <span class="btnlike">⚙ 設定</span> で「この端末の通知を止める」→「この端末で通知を受け取る」をやり直します。</li>
+    <li>家族に、家族の部屋の名前と、家族の合言葉（家族で一緒に決める）を伝えます。</li>
+    <li>テスト：<code>gh workflow run family.yml -R tk1192-creator/stride-family -f test=true</code>（家族の部屋に登録した全端末に届きます）</li>
+  </ol>
+
   <h3>LINE で受け取る準備（最初に 1 回）</h3>
   <ol class="steps">
     <li><a href="https://entry.line.biz/" target="_blank" rel="noopener">LINE 公式アカウントの作成ページ</a>で、自分の LINE アカウントでログインし、公式アカウントを作ります（アカウント名：<code>STRIDE</code>、無料のコミュニケーションプラン）。</li>

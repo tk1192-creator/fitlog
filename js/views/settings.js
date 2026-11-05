@@ -6,6 +6,7 @@ import { generateSample } from '../sample.js';
 import { clearAllTasks, clearDoneTasks, countDoneTasks, exportTasksJSON, loadTasks } from './home-tasks.js';
 import { choiceDialog, confirmDialog, field, fmtDateLong, h, toast } from '../ui.js';
 import * as cloud from '../cloud.js';
+import { connectFamily, disconnectFamily, familyConfig, setFamilyName } from '../family.js';
 
 const BACKUP_REMIND_DAYS = 14;
 const TASK_IMPORT_KEY = 's-task-import'; // タスク画面へ渡すインポート用ファイル（sessionStorage）
@@ -20,7 +21,71 @@ export function unmount() {
 export function render(root, app, params = {}) {
   const links = linksCard(app);
   if (params.focus === 'links') requestAnimationFrame(() => links.scrollIntoView({ block: 'start' }));
-  root.append(cloudCard(app), links, habitCard(app), shareCard(app), profileCard(app), exerciseCard(app), lockCard(app), dataCard(app), taskDataCard(app), dangerCard(app), aboutCard());
+  root.append(cloudCard(app), familySettingsCard(app), links, habitCard(app), shareCard(app), profileCard(app), exerciseCard(app), lockCard(app), dataCard(app), taskDataCard(app), dangerCard(app), aboutCard());
+}
+
+/* ---------- 家族の部屋（v2.10.0。js/family.js） ---------- */
+
+function familySettingsCard(app) {
+  const card = h('section', { class: 'card', id: 'family' }, h('h2', { class: 'card-title', text: '家族の部屋（メッセージ・応援）' }));
+  if (!cloud.getConfig()) {
+    card.append(h('p', { class: 'card-note', text: '先に「記録の保存先（GitHub）」を設定すると使えます。' }));
+    return card;
+  }
+  const fc = familyConfig();
+  if (fc) {
+    const name = h('input', { type: 'text', value: fc.name, maxlength: '20', 'aria-label': '家族に表示する名前' });
+    card.append(
+      h('p', { class: 'lock-status on', text: `👪 接続中：${fc.repo}` }),
+      h('p', { class: 'card-note', text: 'ホームの「家族」カードで、メッセージと応援スタンプを送り合えます。通知をオンにしている端末には、新しいメッセージが届いたときに通知が届きます。' }),
+      h('div', { class: 'inline-form' }, name, h('button', { type: 'button', class: 'btn', text: '名前を保存', onclick: () => { if (!name.value.trim()) return toast('名前を入れてください'); setFamilyName(name.value); toast('名前を変えました'); app.render(); } })),
+      h('button', {
+        type: 'button', class: 'btn btn-danger btn-block', text: 'この端末で家族の部屋から抜ける',
+        onclick: async () => {
+          if (!await confirmDialog('この端末で家族の部屋への接続を解除します（GitHub のメッセージは消えません）。もう一度つなぐときは家族の合言葉が必要です。', { title: '家族の部屋から抜ける', okText: '解除する', danger: true })) return;
+          disconnectFamily();
+          toast('解除しました');
+          app.render();
+        },
+      }),
+    );
+    return card;
+  }
+  const repo = h('input', { type: 'text', placeholder: '例：ユーザー名/stride-family', autocapitalize: 'off', spellcheck: 'false' });
+  const name = h('input', { type: 'text', maxlength: '20', placeholder: '例：パパ', value: (app.data.settings.share && app.data.settings.share.name) || '' });
+  const pass = h('input', { type: 'password', placeholder: '家族で決めた合言葉（8 文字以上）', autocomplete: 'new-password' });
+  const pass2 = h('input', { type: 'password', placeholder: 'もう一度', autocomplete: 'new-password' });
+  const btn = h('button', { type: 'submit', class: 'btn btn-primary btn-block', text: '家族の部屋に入る' });
+  const form = h('form', { class: 'form' },
+    field('家族の部屋（リポジトリ）', repo, '管理者から聞いた名前'),
+    field('家族に表示する名前', name),
+    h('div', { class: 'row-2' }, field('家族の合言葉', pass), field('家族の合言葉（確認）', pass2)),
+    btn,
+  );
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!repo.value.trim().includes('/')) return toast('リポジトリを「ユーザー名/リポジトリ名」で入れてください');
+    if (!name.value.trim()) return toast('家族に表示する名前を入れてください');
+    if (pass.value.length < 8) return toast('家族の合言葉は 8 文字以上にしてください');
+    if (pass.value !== pass2.value) return toast('家族の合言葉が一致しません');
+    btn.disabled = true;
+    btn.textContent = '接続しています…';
+    try {
+      const r = await connectFamily({ repo: repo.value, passphrase: pass.value, name: name.value });
+      toast(r.created ? '家族の部屋を始めました。家族にも同じ合言葉で入ってもらってください' : '家族の部屋に入りました');
+      app.render();
+    } catch (err) {
+      toast(err.message || '接続できませんでした');
+      btn.disabled = false;
+      btn.textContent = '家族の部屋に入る';
+    }
+  });
+  card.append(
+    h('p', { class: 'card-note', text: '家族どうしでメッセージと応援スタンプを送り合えます。メッセージは家族の合言葉で暗号化され、個人の記録（体重など）は共有されません。準備は管理者の作業が必要です（手引きの「家族の部屋」）。' }),
+    form,
+    h('p', { class: 'card-note', text: '家族の合言葉は、家族全員で同じものを使います。忘れると過去のメッセージは読めなくなります。' }),
+  );
+  return card;
 }
 
 /* ---------- よく使うリンク（v2.9.3）。ホームに表示する ---------- */

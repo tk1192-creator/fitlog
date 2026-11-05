@@ -8,6 +8,8 @@ import * as settings from './views/settings.js';
 import { toast } from './ui.js';
 import { registerSW } from './sw-register.js';
 import * as cloud from './cloud.js';
+import * as family from './family.js';
+import { openFamilySheet } from './views/home-family.js';
 
 const VIEWS = { home, records, charts, calendar, settings };
 const TITLES = { home: 'ホーム', records: '記録', charts: 'グラフ', calendar: 'カレンダー', settings: '設定' };
@@ -120,14 +122,36 @@ if (syncEl) {
 }
 
 // タスク画面の下部タブから ./#records などで来たときは、その画面を開く（URL の # は消す）
+// 家族のメッセージの通知から ./#family で来たときは、ホームでやりとりの一覧を開く
 const initialTab = location.hash.slice(1);
 if (location.hash) history.replaceState(null, '', location.pathname + location.search);
 app.navigate(VIEWS[initialTab] ? initialTab : 'home');
+if (initialTab === 'family') {
+  openFamilySheet(app);
+  app.render();
+}
+
+// 開いているときに通知を押した場合（Service Worker から開く場所が届く）
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', (e) => {
+    if (!e.data || e.data.type !== 'stride-open') return;
+    const tab = new URL(e.data.url).hash.slice(1);
+    if (tab === 'family') { app.navigate('home'); openFamilySheet(app); app.render(); } else if (VIEWS[tab]) app.navigate(tab);
+  });
+}
 registerSW();
 
 // GitHub との同期（起動時・アプリに戻ったとき・電波が戻ったとき・記録を変えたとき）
 cloud.attachApp(app);
 cloud.startAutoSync();
+
+// 家族の部屋：新しいメッセージが届いたら、ホームを描き直す（入力中なら後回し）
+family.startFamilyPolling();
+family.onFamilyChange(() => {
+  if (app.current !== 'home') return;
+  if (isEditing()) app.renderLater = true;
+  else app.render();
+});
 
 // デバッグ用（ブラウザのコンソールから参照できるように）
 window.fitlog = app;

@@ -1,0 +1,43 @@
+# STRIDE 家族の部屋：新しいメッセージを家族の端末に通知する（家族の部屋 stride-family に .github/workflows/family.yml として置く）
+# アプリがメッセージのファイルを置いたとき（push）に動く。メッセージ以外の書き込み（古いメッセージの整理・通知先の登録）では動かない。
+name: STRIDE 家族のメッセージ通知
+
+on:
+  push:
+    paths:
+      - 'messages/**'
+  workflow_dispatch:
+    inputs:
+      test:
+        description: 'テスト通知（家族の部屋に登録したすべての端末に送る）'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stride-family
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    # メッセージを送ったときのコミット（説明が「STRIDE 家族メッセージ」で始まる）か、手動のテストだけ
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'STRIDE 家族メッセージ')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: npm install --no-save --no-audit --no-fund web-push@3
+      - run: node .github/scripts/family.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          TEST: ${{ inputs.test || false }}
+          EVENT_PATH: ${{ github.event_path }}
