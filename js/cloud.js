@@ -8,13 +8,17 @@
 // - タスク（Task Board）は端末に保存したまま、設定で選んだ場合だけ暗号化して自動バックアップする
 // - 暗号化：合言葉から PBKDF2（SHA-256・31 万回）で鍵を作り、AES-256-GCM で暗号化。鍵とトークンはこの端末にだけ保存する
 
-import { load as loadLocal, normalize, save as saveLocal } from './storage.js';
+import { load as loadLocal, newId, normalize, save as saveLocal } from './storage.js';
 
 const CONFIG_KEY = 'stride.cloud';
 const STATE_KEY = 'stride.cloud.state'; // { dirty, recordsSha, baseIds, tasksSha, tasksHash, lastSyncAt, lastError }
 const TASK_KEY = 'taskBoard.data';
 const RECORDS_PATH = 'data/records.enc.json';
 const TASKS_PATH = 'data/tasks.enc.json';
+const INBOX_DIR = 'inbox'; // ショートカットが歩数を置く受け取り箱（暗号化なし。取り込んだら消す）
+const NOTIFY_STATUS_PATH = 'notify/status.json'; // 入力忘れのお知らせ用：最後に体重を記録した日付だけ（値は含めない）
+const VAPID_PUBLIC_PATH = 'notify/vapid-public.txt'; // 通知の公開鍵（管理者が tools/notify/setup_notify.py で置く）
+const DEVICE_KEY = 'stride.deviceId';
 const PBKDF2_ITERATIONS = 310000;
 const PUSH_DELAY_MS = 3000;
 const LISTS = ['weights', 'strength', 'jogs', 'daily'];
@@ -179,6 +183,22 @@ async function putFile(cfg, path, text, sha) {
   return j.content.sha;
 }
 
+/** フォルダの中身の一覧（なければ空） */
+async function listDir(cfg, path) {
+  const res = await http(`https://api.github.com/repos/${cfg.repo}/contents/${path}`, { headers: headers(cfg.token) });
+  if (res.status === 404) return [];
+  const j = await ghJSON(res);
+  return Array.isArray(j) ? j : [];
+}
+
+async function deleteFile(cfg, path, sha) {
+  const res = await http(`https://api.github.com/repos/${cfg.repo}/contents/${path}`, {
+    method: 'DELETE', headers: { ...headers(cfg.token), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: `STRIDE 自動整理 ${new Date().toISOString()}`, sha }),
+  });
+  if (!res.ok && res.status !== 404) await ghJSON(res);
+}
+
 /* ======================================================================
    設定と状態（この端末の localStorage）
    ====================================================================== */
@@ -257,7 +277,9 @@ export async function syncNow() {
       do {
         again = false;
         await syncRecords();
+        if (await importStepsInbox()) again = true; // 取り込んだ歩数を記録として保存し直す
         await syncTasks();
+        await updateNotifyStatus();
       } while (again);
       setState({ lastSyncAt: new Date().toISOString(), lastError: null });
       setStatus('ok');
@@ -353,6 +375,169 @@ async function syncTasks() {
       throw e;
     }
   }
+}
+
+/* ======================================================================
+   歩数の受け取り箱（iPhone のショートカットが inbox/steps-YYYY-MM-DD-….json を置く）
+   ====================================================================== */
+
+/** 受け取り箱のファイル名から日付を取り出す（steps-2026-11-05-213000.json など） */
+export function stepsDateOf(name) {
+  const m = /^steps-(\d{4}-\d{2}-\d{2})(?:[-_T].*)?\.json$/.exec(name);
+  return m ? m[1] : null;
+}
+
+/**
+ * 歩数を記録に反映する（純粋関数。テスト対象）。同じ日の食事・歩数の記録があれば歩数だけ上書き
+ * @param {{date: string, steps: number}[]} items 日付ごとに 1 件（最新のもの）
+ */
+export function applySteps(data, items) {
+  const out = { ...data, daily: [...(data.daily || [])] };
+  for (const { date, steps } of items) {
+    const i = out.daily.findIndex((d) => d.date === date);
+    if (i >= 0) out.daily[i] = { ...out.daily[i], steps };
+    else out.daily.push({ id: newId(), date, intakeKcal: null, steps, memo: '' });
+  }
+  return normalize(out);
+}
+
+/** @returns {boolean} 取り込んだら true */
+async function importStepsInbox() {
+  const cfg = getConfig();
+  const files = (await listDir(cfg, INBOX_DIR)).filter((f) => f.type === 'file' && stepsDateOf(f.name));
+  if (!files.length) return false;
+  // 同じ日のファイルが複数あれば、名前（時刻）が最も新しいものを使う
+  files.sort((a, b) => (a.name < b.name ? -1 : 1));
+  const latest = new Map();
+  for (const f of files) {
+    const file = await getFile(cfg, `${INBOX_DIR}/${f.name}`);
+    if (!file) continue;
+    try {
+      const j = JSON.parse(file.text);
+      const steps = Math.round(Number(String(j.steps).replace(/[^\d.]/g, '')));
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(j.date) ? j.date : stepsDateOf(f.name);
+      if (date && steps >= 0 && steps <= 200000) latest.set(date, { date, steps });
+    } catch (_) { /* 読めないファイルは消すだけ */ }
+  }
+  if (latest.size) {
+    const next = applySteps(loadLocal(), [...latest.values()]);
+    applyLocal(next);
+    setState({ dirty: true });
+  }
+  for (const f of files) await deleteFile(cfg, `${INBOX_DIR}/${f.name}`, f.sha);
+  return latest.size > 0;
+}
+
+/* ======================================================================
+   入力忘れのお知らせ（Web プッシュ）
+   - 送るのは保存先リポジトリの GitHub Actions（tools/notify/）。21 時以降、今日の体重がなければ通知する
+   - アプリは「最後に体重を記録した日付」だけを notify/status.json に書く（記録の値は書かない）
+   - 通知を受け取る端末は notify/sub-<端末ID>.json に購読情報を置く
+   ====================================================================== */
+
+/** 最後に体重を記録した日付（なければ null） */
+export function lastWeightDate(data) {
+  return (data.weights || []).reduce((m, w) => (!m || w.date > m ? w.date : m), null);
+}
+
+async function updateNotifyStatus() {
+  const cfg = getConfig();
+  const st = getState();
+  // このリポジトリで通知を使っているか（status.json があるか）を 1 日 1 回だけ確かめる
+  let active = st.notifyActive;
+  if (active == null || !st.notifyCheckedAt || Date.now() - Date.parse(st.notifyCheckedAt) > 86400000) {
+    active = Boolean(await getFile(cfg, NOTIFY_STATUS_PATH));
+    setState({ notifyActive: active, notifyCheckedAt: new Date().toISOString() });
+  }
+  if (!active) return;
+  const last = lastWeightDate(loadLocal());
+  if (last === st.notifyLastWeightDate) return;
+  await writeNotifyStatus(cfg, last);
+}
+
+async function writeNotifyStatus(cfg, last) {
+  const body = JSON.stringify({ lastWeightDate: last, updatedAt: new Date().toISOString() });
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const cur = await getFile(cfg, NOTIFY_STATUS_PATH);
+    try {
+      await putFile(cfg, NOTIFY_STATUS_PATH, body, cur ? cur.sha : null);
+      setState({ notifyLastWeightDate: last, notifyActive: true });
+      return;
+    } catch (e) {
+      if (e.status === 409 || e.status === 422) continue;
+      throw e;
+    }
+  }
+}
+
+function b64urlToBytes(s) {
+  return b64ToBytes(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4));
+}
+
+function deviceId() {
+  let id = localStorage.getItem(DEVICE_KEY);
+  if (!id) {
+    id = Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => b.toString(16).padStart(2, '0')).join('');
+    localStorage.setItem(DEVICE_KEY, id);
+  }
+  return id;
+}
+
+/** この端末で通知を使えるか（理由つき） */
+export function notifySupport() {
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const standalone = navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+  if (ios && !standalone) return { ok: false, reason: 'iPhone では、ホーム画面に追加した STRIDE から開いたときだけ通知を受け取れます' };
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+    return { ok: false, reason: 'この端末・ブラウザは通知に対応していません（iPhone は iOS 16.4 以降が必要です）' };
+  }
+  if (Notification.permission === 'denied') return { ok: false, reason: '通知が拒否されています。iPhone の「設定 → 通知 → STRIDE」で許可してください' };
+  return { ok: true };
+}
+
+export function isNotifyOn() {
+  const c = getConfig();
+  return Boolean(c && c.notify && c.notify.deviceId);
+}
+
+/** 通知をオンにする（必ずボタンを押した操作の中から呼ぶ） */
+export async function enableNotify() {
+  const cfg = getConfig();
+  if (!cfg) throw new Error('先に「記録の保存先（GitHub）」を設定してください');
+  const sup = notifySupport();
+  if (!sup.ok) throw new Error(sup.reason);
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') throw new Error('通知が許可されませんでした');
+  const keyFile = await getFile(cfg, VAPID_PUBLIC_PATH);
+  if (!keyFile) throw new Error('通知の準備（管理者の作業）がまだ済んでいません。管理者に連絡してください');
+  const reg = await navigator.serviceWorker.ready;
+  const old = await reg.pushManager.getSubscription();
+  if (old) await old.unsubscribe();
+  const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64urlToBytes(keyFile.text.trim()) });
+  const id = deviceId();
+  const path = `notify/sub-${id}.json`;
+  const cur = await getFile(cfg, path);
+  const label = /iPhone/.test(navigator.userAgent) ? 'iPhone' : /iPad/.test(navigator.userAgent) ? 'iPad' : 'PC';
+  await putFile(cfg, path, JSON.stringify({ subscription: sub.toJSON(), device: label, createdAt: new Date().toISOString() }), cur ? cur.sha : null);
+  await writeNotifyStatus(cfg, lastWeightDate(loadLocal()));
+  setConfig({ ...getConfig(), notify: { deviceId: id } });
+  notify();
+}
+
+/** 通知をオフにする（この端末だけ） */
+export async function disableNotify() {
+  const cfg = getConfig();
+  if (!cfg || !cfg.notify) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) await sub.unsubscribe();
+  } catch (_) { /* 何もしない */ }
+  const path = `notify/sub-${cfg.notify.deviceId}.json`;
+  const cur = await getFile(cfg, path);
+  if (cur) await deleteFile(cfg, path, cur.sha);
+  const { notify: _drop, ...rest } = cfg;
+  setConfig(rest);
 }
 
 /* ======================================================================

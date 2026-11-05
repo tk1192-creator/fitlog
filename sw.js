@@ -107,3 +107,35 @@ self.addEventListener('fetch', (event) => {
     }
   })());
 });
+
+/* ---------- 入力忘れのお知らせ（Web プッシュ） ---------- */
+
+// 通知を受け取ったら表示する（iPhone では、受け取ったら必ず表示する必要がある）
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (_) {
+    data = { body: event.data ? event.data.text() : '' };
+  }
+  event.waitUntil(self.registration.showNotification(data.title || 'STRIDE', {
+    body: data.body || '今日の記録を確認しましょう',
+    icon: './icons/icon-192.png',
+    badge: './icons/icon-192.png',
+    tag: data.tag || 'stride-remind',
+    data: { url: data.url || './' },
+  }));
+});
+
+// 通知をタップしたら STRIDE を開く（開いていれば前面に出す）
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = new URL((event.notification.data && event.notification.data.url) || './', self.registration.scope).href;
+  event.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const w of wins) {
+      if (w.url.startsWith(self.registration.scope) && 'focus' in w) return w.focus();
+    }
+    return self.clients.openWindow(url);
+  })());
+});

@@ -81,8 +81,21 @@ function fakeGitHub({ isPrivate = true } = {}) {
     const path = m[2];
     if (!opts.method || opts.method === 'GET') {
       const f = files.get(path);
-      if (!f) return json(404, { message: 'Not Found' });
+      if (!f) {
+        // フォルダなら中身の一覧を返す
+        const children = [...files.entries()].filter(([k]) => k.startsWith(path + '/') && !k.slice(path.length + 1).includes('/'));
+        if (children.length) return json(200, children.map(([k, v]) => ({ type: 'file', name: k.slice(path.length + 1), path: k, sha: v.sha })));
+        return json(404, { message: 'Not Found' });
+      }
       return json(200, { sha: f.sha, content: cloud.bytesToB64(new TextEncoder().encode(f.text)) });
+    }
+    if (opts.method === 'DELETE') {
+      const body = JSON.parse(opts.body);
+      const cur = files.get(path);
+      if (!cur) return json(404, { message: 'Not Found' });
+      if (body.sha !== cur.sha) return json(409, { message: 'does not match' });
+      files.delete(path);
+      return json(200, {});
     }
     if (opts.method === 'PUT') {
       const body = JSON.parse(opts.body);
@@ -209,8 +222,53 @@ testSeq('同期: タスクを保存する設定なら、タスクも暗号化し
   const f = gh.files.get('data/tasks.enc.json');
   eq([Boolean(f), f.text.includes('見積書')], [true, false]);
 });
+testSeq('歩数: 受け取り箱の歩数が「食事・歩数」に取り込まれ、受け取り箱は空になる', async () => {
+  // ショートカットが置いたつもりのファイル（同じ日に 2 回。新しい方を使う）
+  gh.files.set('inbox/steps-2026-11-05-120000.json', { sha: 'i1', text: '{"date":"2026-11-05","steps":4100}' });
+  gh.files.set('inbox/steps-2026-11-05-223000.json', { sha: 'i2', text: '{"date":"2026-11-05","steps":9876}' });
+  gh.files.set('inbox/steps-2026-11-04-230000.json', { sha: 'i3', text: '{"date":"2026-11-04","steps":"7,001"}' });
+  await cloud.syncNow();
+  const local = JSON.parse(localStorage.getItem('fitlog.v1'));
+  const byDate = Object.fromEntries(local.daily.map((d) => [d.date, d.steps]));
+  eq([byDate['2026-11-05'], byDate['2026-11-04']], [9876, 7001]);
+  eq([...gh.files.keys()].filter((k) => k.startsWith('inbox/')).length, 0, '受け取り箱が空');
+  const { key } = await keyFor(gh);
+  const remote = await cloud.decryptJSON(key, gh.files.get('data/records.enc.json').text);
+  eq(remote.daily.find((d) => d.date === '2026-11-05').steps, 9876, 'GitHub の記録にも反映');
+});
+testSeq('通知: notify/status.json がない保存先には何も書かない', async () => {
+  await cloud.syncNow();
+  eq(gh.files.has('notify/status.json'), false);
+});
+testSeq('通知: 通知を使っている保存先には「最後に体重を記録した日付」だけを書く', async () => {
+  gh.files.set('notify/status.json', { sha: 'st0', text: '{"lastWeightDate":null}' });
+  const st = JSON.parse(localStorage.getItem('stride.cloud.state'));
+  delete st.notifyActive; delete st.notifyCheckedAt;
+  localStorage.setItem('stride.cloud.state', JSON.stringify(st));
+  await cloud.syncNow();
+  const status = JSON.parse(gh.files.get('notify/status.json').text);
+  eq(status.lastWeightDate, '2026-11-04');
+  eq(Object.keys(status).sort(), ['lastWeightDate', 'updatedAt'], '体重の値などは含まない');
+});
+
 testSeq('同期の後片付け（端末のデータを元に戻す）', async () => {
   await new Promise((r) => setTimeout(r, 3500)); // 予約された自動送信を待つ
   delete globalThis.__strideFetch;
   for (const k of KEYS) { if (saved[k] == null) localStorage.removeItem(k); else localStorage.setItem(k, saved[k]); }
+});
+
+/* ---------- 歩数・通知の補助関数 ---------- */
+test('歩数: 受け取り箱のファイル名から日付を取り出す', () => {
+  eq([cloud.stepsDateOf('steps-2026-11-05-223000.json'), cloud.stepsDateOf('steps-2026-11-05.json'), cloud.stepsDateOf('memo.json')], ['2026-11-05', '2026-11-05', null]);
+});
+test('歩数: 既存の食事の記録は残し、歩数だけ上書きする', () => {
+  const d = data({ daily: [{ id: 'd1', date: '2026-11-05', intakeKcal: 1800, steps: 100, memo: '外食' }] });
+  const next = cloud.applySteps(d, [{ date: '2026-11-05', steps: 8000 }, { date: '2026-11-06', steps: 500 }]);
+  const a = next.daily.find((x) => x.date === '2026-11-05');
+  eq([a.id, a.intakeKcal, a.steps, a.memo], ['d1', 1800, 8000, '外食']);
+  eq(next.daily.find((x) => x.date === '2026-11-06').steps, 500);
+});
+test('通知: 最後に体重を記録した日付', () => {
+  eq(cloud.lastWeightDate(data({ weights: [W('a', '2026-11-02', 70), W('b', '2026-11-05', 69), W('c', '2026-11-03', 69.5)] })), '2026-11-05');
+  eq(cloud.lastWeightDate(data({})), null);
 });

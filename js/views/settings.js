@@ -165,8 +165,50 @@ function cloudCard(app) {
         },
       }),
     ),
+    notifySection(app),
+    h('p', { class: 'card-note' }, '歩数をヘルスケアから自動で取り込む方法は ', h('a', { href: './guide/#steps', text: '手引きの「歩数の自動取り込み」' }), ' を見てください。'),
   );
   return card;
+}
+
+/** 入力忘れのお知らせ（21 時以降、今日の体重がまだなら通知） */
+function notifySection(app) {
+  const box = h('div', { class: 'notify-box' },
+    h('h3', { class: 'notify-title', text: '入力忘れのお知らせ（毎日 21 時ごろ）' }),
+    h('p', { class: 'card-note', text: 'その日の体重がまだ記録されていないときだけ、この端末に通知します（GitHub の混み具合で数分〜数十分遅れることがあります）。' }),
+  );
+  const sup = cloud.notifySupport();
+  if (cloud.isNotifyOn()) {
+    box.append(
+      h('p', { class: 'lock-status on', text: '🔔 この端末で受け取る：オン' }),
+      h('button', {
+        type: 'button', class: 'btn btn-block', text: 'この端末の通知を止める',
+        onclick: async () => {
+          try { await cloud.disableNotify(); toast('通知を止めました'); } catch (_) { toast('止められませんでした。電波を確認してください'); }
+          app.render();
+        },
+      }),
+    );
+  } else if (!sup.ok) {
+    box.append(h('p', { class: 'notice', text: sup.reason }));
+  } else {
+    const btn = h('button', { type: 'button', class: 'btn btn-primary btn-block', text: 'この端末で通知を受け取る' });
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      btn.textContent = '設定しています…';
+      try {
+        await cloud.enableNotify();
+        toast('通知をオンにしました（21 時ごろ、体重が未記録の日に届きます）');
+        app.render();
+      } catch (e) {
+        toast(e.message || '通知をオンにできませんでした');
+        btn.disabled = false;
+        btn.textContent = 'この端末で通知を受け取る';
+      }
+    });
+    box.append(h('p', { class: 'lock-status', text: '🔕 この端末で受け取る：オフ' }), btn);
+  }
+  return box;
 }
 
 /* ---------- タスクのデータ（タスク画面の「バックアップ・補助操作」を移したもの） ---------- */

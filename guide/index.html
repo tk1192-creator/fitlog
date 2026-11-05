@@ -99,6 +99,8 @@
     <li><a href="#profile">プロフィールを入力する</a></li>
     <li><a href="#record">記録をつける</a></li>
     <li><a href="#features">便利な機能</a></li>
+    <li><a href="#remind">入力忘れのお知らせ（通知）</a></li>
+    <li><a href="#steps">歩数の自動取り込み（ヘルスケア）</a></li>
     <li><a href="#trouble">してはいけないこと・困ったとき</a></li>
     <li><a href="#admin">管理者向け：家族の保存先とトークンを用意する</a></li>
   </ol>
@@ -225,8 +227,70 @@
   </table></div>
 </section>
 
+<section class="card" id="remind">
+  <h2><span class="no">8</span>入力忘れのお知らせ（通知）</h2>
+  <p>毎日 21 時ごろ、<strong>その日の体重がまだ記録されていないときだけ</strong>、iPhone に通知が届きます。記録済みの日は届きません。</p>
+  <div class="note">先に手順 4（記録の保存先）を済ませておく必要があります。また、管理者が通知の準備（手順 11）を済ませている必要があります。iOS 16.4 以降で使えます。</div>
+  <ol class="steps">
+    <li>ホーム画面の <strong>STRIDE アイコン</strong>から開きます（Safari からでは通知を受け取れません）。</li>
+    <li><span class="btnlike">⚙ 設定</span> →「記録の保存先（GitHub）」の欄の下にある「<strong>入力忘れのお知らせ</strong>」で、<span class="btnlike">この端末で通知を受け取る</span> をタップします。</li>
+    <li>「“STRIDE”は通知を送信します。よろしいですか？」と出たら <strong>「許可」</strong>をタップします。
+      <div class="shot">通知の許可を求める画面（「許可」をタップ）</div>
+    </li>
+    <li>「🔔 この端末で受け取る：オン」になれば完了です。</li>
+  </ol>
+  <ul>
+    <li>通知をタップすると STRIDE の記録画面が開きます。</li>
+    <li>届く時刻は、混み具合で数分〜数十分遅れることがあります。</li>
+    <li>止めたいときは、同じ場所の <span class="btnlike">この端末の通知を止める</span> をタップします。</li>
+  </ul>
+  <h3>通知が使えない端末の場合（「ショートカット」アプリで毎日知らせる）</h3>
+  <p>記録したかどうかに関係なく、毎日決まった時刻に知らせる方法です。プログラムの準備は不要です。</p>
+  <ol class="steps">
+    <li>iPhone の「<strong>ショートカット</strong>」アプリを開き、下の「<strong>オートメーション</strong>」→ 右上の「<strong>＋</strong>」をタップします。</li>
+    <li>「<strong>時刻</strong>」を選び、時刻を「21:00」、繰り返しを「毎日」にし、「<strong>すぐに実行</strong>」を選んで「次へ」。</li>
+    <li>「新規の空のショートカット」→ アクションの検索で「<strong>通知を表示</strong>」を追加し、文章を「今日の体重を記録しましょう」にして「完了」。</li>
+  </ol>
+  <p class="note">画面の名前は iOS のバージョンによって少し違うことがあります（要確認）。</p>
+</section>
+
+<section class="card" id="steps">
+  <h2><span class="no">9</span>歩数の自動取り込み（ヘルスケア）</h2>
+  <p>iPhone の「ヘルスケア」の歩数を、毎日自動で STRIDE に取り込みます。「ショートカット」アプリが歩数を読み取り、あなたの保存先（受け取り箱）に送り、STRIDE が次に開いたときに取り込みます。</p>
+  <div class="note">先に手順 4（記録の保存先）を済ませておく必要があります。歩数用のトークン（手順 11 で管理者からもらう「歩数用」）を使います。</div>
+  <div class="warn">受け取り箱に置いた歩数と日付は、STRIDE が取り込むまで暗号化されません（取り込んだら消えます）。</div>
+  <h3>ショートカットを作る（最初に 1 回）</h3>
+  <ol class="steps">
+    <li>「ショートカット」アプリ → 右上の「<strong>＋</strong>」で新しいショートカットを作り、名前を「STRIDE 歩数」にします。</li>
+    <li>アクション「<strong>ヘルスケアサンプルを検索</strong>」を追加し、種類を「<strong>歩数</strong>」、条件を「開始日」が「<strong>今日</strong>」にします（初回はヘルスケアへのアクセスの許可を求められるので「許可」）。</li>
+    <li>アクション「<strong>統計を計算</strong>」を追加し、「<strong>合計</strong>」にします（入力は「ヘルスケアサンプル」）。</li>
+    <li>アクション「<strong>日付を書式設定</strong>」を追加し、日付を「現在の日付」、書式を「カスタム」で <code>yyyy-MM-dd</code> にします。</li>
+    <li>もう一つ「<strong>日付を書式設定</strong>」を追加し、書式を「カスタム」で <code>yyyy-MM-dd-HHmmss</code> にします。</li>
+    <li>アクション「<strong>テキスト</strong>」を追加し、次のように入力します（［ ］の部分は、前の手順の結果を「変数」として差し込みます）。<br><code>{"date":"［手順 4 の日付］","steps":［統計］}</code></li>
+    <li>アクション「<strong>Base64 エンコード</strong>」を追加します（入力は「テキスト」。改行の設定があれば「なし」）。</li>
+    <li>アクション「<strong>URL の内容を取得</strong>」を追加し、次のとおり設定します。
+      <div class="scroll"><table>
+        <tr><th>項目</th><th>設定</th></tr>
+        <tr><td>URL</td><td><code>https://api.github.com/repos/</code>［あなたのリポジトリ名］<code>/contents/inbox/steps-</code>［手順 5 の日付］<code>.json</code></td></tr>
+        <tr><td>方法</td><td><code>PUT</code></td></tr>
+        <tr><td>ヘッダ</td><td><code>Authorization</code>：<code>Bearer </code>［歩数用のトークン］<br><code>Accept</code>：<code>application/vnd.github+json</code></td></tr>
+        <tr><td>本文を要求</td><td>JSON。<code>message</code>（テキスト）：<code>steps</code>、<code>content</code>（テキスト）：［Base64 エンコードの結果］</td></tr>
+      </table></div>
+      <div class="shot">「URL の内容を取得」の設定画面（方法・ヘッダ・本文）</div>
+    </li>
+    <li>右上の ▶（実行）で試します。エラーが出なければ、次に STRIDE を開いたときに「記録 → 食事・歩数」に今日の歩数が入ります。</li>
+  </ol>
+  <h3>毎日自動で動かす</h3>
+  <ol class="steps">
+    <li>「ショートカット」アプリ → 「オートメーション」→「＋」→「<strong>時刻</strong>」。</li>
+    <li>時刻を「<strong>22:30</strong>」など、<strong>iPhone を使っていることが多い時間</strong>にし、「毎日」「すぐに実行」を選びます。</li>
+    <li>「STRIDE 歩数」を選んで完了です。</li>
+  </ol>
+  <div class="warn">iPhone がロックされていると、ヘルスケアのデータを読めずに失敗することがあります（要確認）。うまく動かない日は、寝る前に「STRIDE 歩数」を手動で実行してください。また、日付が変わる前（24 時より前）に実行してください。</div>
+</section>
+
 <section class="card" id="trouble">
-  <h2><span class="no">8</span>してはいけないこと・困ったとき</h2>
+  <h2><span class="no">10</span>してはいけないこと・困ったとき</h2>
   <div class="danger">保存先の設定（手順 4）が終わる前に、ホーム画面の STRIDE アイコンを削除しないでください。記録が消えます。</div>
   <div class="scroll"><table>
     <tr><th>困ったこと</th><th>どうするか</th></tr>
@@ -239,7 +303,7 @@
 </section>
 
 <section class="card admin" id="admin">
-  <h2><span class="no">9</span>管理者向け：家族の保存先とトークンを用意する</h2>
+  <h2><span class="no">11</span>管理者向け：家族の保存先とトークンを用意する</h2>
   <p>家族の保存先（非公開リポジトリ）は、管理者の GitHub アカウントに作ります。家族は GitHub のアカウントがなくても使えます。</p>
   <h3>トークンを作る（家族 1 人につき 1 つ）</h3>
   <ol class="steps">
@@ -255,7 +319,16 @@
     <li>合言葉は家族自身に決めてもらい、管理者は聞かないでください（中身が読めない状態を保つため）。</li>
     <li>トークンの期限が近づいたら、同じ手順で作り直して渡します。古いトークンは GitHub の画面から削除します。</li>
   </ul>
-  <div class="note">管理者は保存先（箱）を管理できますが、中身は家族の合言葉で暗号化されているため読めません。</div>
+  <h3>歩数用のトークン（手順 9 を使う人だけ）</h3>
+  <p>上と同じ手順で、名前を <code>STRIDE-歩数-家族の呼び名</code> にして、もう 1 つ作ります（対象リポジトリと権限は同じ）。STRIDE 用とは別にしておくと、iPhone をなくしたときに歩数用だけを止められます。</p>
+  <h3>入力忘れのお知らせの準備（最初に 1 回）</h3>
+  <ol class="steps">
+    <li>パソコンで、STRIDE のプログラムのフォルダ（<code>fitlog</code>）を開いた PowerShell で、次を実行します（保存先を並べて指定）。<br><code>python tools/notify/setup_notify.py tk1192-creator/stride-○○ tk1192-creator/stride-△△</code></li>
+    <li>「準備しました」と出れば完了です。各保存先に、通知を送る仕組み（毎日 21 時ごろに動く）と、通知用の鍵が設定されます（秘密鍵は GitHub の「シークレット」に保存され、画面には出ません）。</li>
+    <li>家族に、手順 8 で「この端末で通知を受け取る」を押してもらいます。</li>
+    <li>テスト通知を送るとき：<code>gh workflow run remind.yml -R tk1192-creator/stride-○○ -f test=true</code></li>
+  </ol>
+  <div class="note">管理者は保存先（箱）を管理できますが、中身は家族の合言葉で暗号化されているため読めません。通知のために置く情報は「最後に体重を記録した日付」と通知先の情報だけです。</div>
 </section>
 
 <footer>

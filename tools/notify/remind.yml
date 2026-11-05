@@ -1,0 +1,42 @@
+# STRIDE 入力忘れのお知らせ（保存先リポジトリ stride-○○ に .github/workflows/remind.yml として置く）
+# 21 時（日本時間）以降、その日の体重がまだ記録されていなければ、登録した端末に通知を送る。
+# 定時実行は混雑で遅れたり飛ばされたりすることがあるため、21:07・21:37・22:07 の 3 回動かし、1 日 1 回だけ送る。
+name: STRIDE 入力忘れのお知らせ
+
+on:
+  schedule:
+    - cron: '7 12 * * *'   # 21:07（日本時間）
+    - cron: '37 12 * * *'  # 21:37（遅れ・取りこぼしの保険）
+    - cron: '7 13 * * *'   # 22:07（同上）
+  workflow_dispatch:
+    inputs:
+      test:
+        description: 'テスト通知（記録の有無に関係なく、今すぐ送る）'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stride-remind
+  cancel-in-progress: false
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: npm install --no-save --no-audit --no-fund web-push@3
+      - run: node .github/scripts/remind.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          TEST: ${{ inputs.test || false }}
