@@ -21,6 +21,9 @@ export function defaultData() {
       lastExportAt: null,
       // LINE で家族に報告（v2.4.0）。既定はオフ。体重は増減だけを送る
       share: { enabled: false, name: '', weekly: true, pb: true, weight: false },
+      // お祝い済みの節目（kg）とバッジ（v2.6.0）。null は「まだ調べていない」（最初の保存時に、それまでの分はお祝いせずに記録する）
+      celebrated: null,
+      reviewDismissed: null, // 先週のふりかえりを閉じた週（その週の月曜日）
     },
     exercises: [...DEFAULT_EXERCISES],
     weights: [],
@@ -99,6 +102,13 @@ export function normalize(obj) {
       pb: s.share && s.share.pb === false ? false : true,
       weight: Boolean(s.share && s.share.weight),
     },
+    celebrated: s.celebrated && typeof s.celebrated === 'object'
+      ? {
+        milestones: (Array.isArray(s.celebrated.milestones) ? s.celebrated.milestones : []).map(Number).filter((v) => v > 0),
+        badges: (Array.isArray(s.celebrated.badges) ? s.celebrated.badges : []).map(str).filter(Boolean),
+      }
+      : null,
+    reviewDismissed: DATE_RE.test(str(s.reviewDismissed)) ? s.reviewDismissed : null,
   };
 
   const exercises = Array.isArray(obj.exercises)
@@ -146,8 +156,17 @@ export function normalize(obj) {
     daily.push({ id: str(r.id) || newId(), date: r.date, intakeKcal: k, steps: st, memo: str(r.memo) });
   }
 
-  return { schemaVersion: SCHEMA_VERSION, settings, exercises, weights, strength, jogs, daily };
+  // この版が知らない項目（新しい版で増えたもの）は、中身に手を付けずに残す（v2.6.0）。
+  // 古い版の端末で読み書き・同期しても、新しい版の記録や設定が消えないようにするため。
+  const extra = {};
+  for (const [k, v] of Object.entries(obj)) if (!KNOWN_KEYS.includes(k)) extra[k] = v;
+  const extraSettings = {};
+  for (const [k, v] of Object.entries(obj.settings || {})) if (!(k in base.settings)) extraSettings[k] = v;
+
+  return { ...extra, schemaVersion: SCHEMA_VERSION, settings: { ...extraSettings, ...settings }, exercises, weights, strength, jogs, daily };
 }
+
+const KNOWN_KEYS = ['schemaVersion', 'settings', 'exercises', 'weights', 'strength', 'jogs', 'daily'];
 
 /** ファイルとしてダウンロードさせる */
 function download(filename, content, mime) {

@@ -1,6 +1,7 @@
-// 自己ベスト一覧
+// 自己ベスト一覧とバッジ
 import { fmtNum, formatPace } from '../calc.js';
 import { computeBests, PACE_MIN_KM } from '../pb.js';
+import { BADGE_GROUPS, evaluateBadges } from '../badges.js';
 import { fmtDateShort, h } from '../ui.js';
 
 function row(label, value, sub) {
@@ -48,6 +49,31 @@ export function renderBestList(root, app) {
 
   root.append(
     h('p', { class: 'card-note', text: '記録全体から計算しています。記録を編集・削除すると自動で更新されます。' }),
-    st, jg, wt,
+    badgeCard(app), st, jg, wt,
   );
+}
+
+/** バッジ（獲得済みは色付きで獲得日、未獲得は薄く表示して残りを出す） */
+function badgeCard(app) {
+  const all = evaluateBadges(app.data);
+  const got = all.filter((b) => b.earned).length;
+  const card = h('section', { class: 'card', id: 'badges' },
+    h('h2', { class: 'card-title' }, 'バッジ ', h('span', { class: 'badge-count', text: `${got} / ${all.length}` })),
+  );
+  for (const g of BADGE_GROUPS) {
+    const list = all.filter((b) => b.group === g);
+    card.append(h('h3', { class: 'badge-group', text: g }), h('ul', { class: 'badge-grid' }, list.map((b) => h('li', {
+      class: `badge-tile${b.earned ? ' earned' : ''}`,
+      'aria-label': `${b.name}：${b.earned ? `${fmtDateShort(b.earned)} 獲得` : `未獲得（${b.remain}）`}。${b.desc}`,
+    },
+    h('span', { class: 'badge-icon', 'aria-hidden': 'true', text: b.icon }),
+    h('span', { class: 'badge-name', text: b.name }),
+    b.earned
+      ? h('span', { class: 'badge-sub', text: `${fmtDateShort(b.earned)} 獲得` })
+      : h('span', { class: 'badge-sub' },
+        h('span', { class: 'badge-bar', 'aria-hidden': 'true' }, h('span', { style: `width:${Math.round(b.progress * 100)}%` })),
+        b.remain),
+    ))));
+  }
+  return card;
 }

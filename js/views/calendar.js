@@ -4,6 +4,7 @@ import {
   streakWeeks, todayStr, weekStart, weeklyCounts,
 } from '../calc.js';
 import { fmtDateLong, h } from '../ui.js';
+import { TASK_STATUS_LABEL, loadTasks, tasksByDue } from './home-tasks.js';
 
 const WD = ['月', '火', '水', '木', '金', '土', '日'];
 
@@ -21,6 +22,9 @@ export function render(root, app) {
   const strengthDays = new Set(app.data.strength.map((r) => r.date));
   const jogDays = new Set(app.data.jogs.map((r) => r.date));
   const streak = streakWeeks(days, goal, today);
+  // タスクの期限（Task Board のデータを読むだけ。この端末の中だけで表示する）
+  const taskMap = tasksByDue(loadTasks() || []);
+  const openTasksOn = (d) => (taskMap.get(d) || []).filter((t) => t.status !== 'done');
 
   // ストリーク
   root.append(h('section', { class: 'streak-card' },
@@ -46,6 +50,7 @@ export function render(root, app) {
   const monthDays = [...days].filter((d) => d.startsWith(state.month)).length;
   const monthStrength = new Set(app.data.strength.filter(inMonth).map((r) => r.date)).size;
   const monthJogKm = app.data.jogs.filter(inMonth).reduce((s, j) => s + j.distanceKm, 0);
+  const monthTasks = [...taskMap.entries()].filter(([d]) => d.startsWith(state.month)).reduce((n, [d]) => n + openTasksOn(d).length, 0);
 
   const card = h('section', { class: 'card cal-card' },
     h('div', { class: 'cal-head' },
@@ -61,6 +66,7 @@ export function render(root, app) {
       h('span', {}, '運動 ', h('strong', { text: String(monthDays) }), ' 日'),
       h('span', {}, h('i', { class: 'mark mark-strength' }), ' 筋トレ ', h('strong', { text: String(monthStrength) }), ' 日'),
       h('span', {}, h('i', { class: 'mark mark-jog' }), ' ジョギング ', h('strong', { text: fmtNum(monthJogKm, 1) }), ' km'),
+      taskMap.size ? h('span', {}, h('i', { class: 'mark mark-task' }), ' タスク期限 ', h('strong', { text: String(monthTasks) }), ' 件') : null,
     ),
   );
 
@@ -90,7 +96,10 @@ export function render(root, app) {
       if (d > today) cls.push('future');
       if (i === 5) cls.push('sat');
       if (i === 6) cls.push('sun');
-      const what = [s ? '筋トレ' : null, j ? 'ジョギング' : null].filter(Boolean).join('と') || '運動なし';
+      const tk = openTasksOn(d);
+      const late = tk.length > 0 && d < today; // 期限切れ
+      const what = ([s ? '筋トレ' : null, j ? 'ジョギング' : null].filter(Boolean).join('と') || '運動なし')
+        + (tk.length ? `、タスクの期限 ${tk.length} 件${late ? '（期限切れ）' : ''}` : '');
       row.append(h('button', {
         type: 'button', class: cls.join(' '), role: 'gridcell',
         'aria-label': `${fmtDateLong(d)} ${what}`, 'aria-selected': String(d === state.selected),
@@ -100,6 +109,7 @@ export function render(root, app) {
       h('span', { class: 'marks' },
         s ? h('i', { class: 'mark mark-strength' }) : null,
         j ? h('i', { class: 'mark mark-jog' }) : null,
+        tk.length ? h('i', { class: `mark mark-task${late ? ' late' : ''}` }) : null,
       )));
     }
     const futureWeek = wk > today; // まだ来ていない週は日数を出さない
@@ -114,15 +124,16 @@ export function render(root, app) {
   card.append(h('p', { class: 'cal-legend' },
     h('span', {}, h('i', { class: 'mark mark-strength' }), ' 筋トレ'),
     h('span', {}, h('i', { class: 'mark mark-jog' }), ' ジョギング'),
+    taskMap.size ? h('span', {}, h('i', { class: 'mark mark-task' }), ' タスクの期限') : null,
     h('span', {}, h('span', { class: 'wk-badge small', text: 'n' }), ` 週の目標（${goal} 日）達成`),
   ));
   root.append(card);
 
-  root.append(dayDetail(app, state.selected, today));
+  root.append(dayDetail(app, state.selected, today, taskMap.get(state.selected) || []));
 }
 
 /** 選択した日の記録 */
-function dayDetail(app, date, today) {
+function dayDetail(app, date, today, tasks) {
   const weights = app.data.weights.filter((x) => x.date === date);
   const strength = app.data.strength.filter((x) => x.date === date);
   const jogs = app.data.jogs.filter((x) => x.date === date);
@@ -141,6 +152,21 @@ function dayDetail(app, date, today) {
   );
   if (items.length) card.append(h('ul', { class: 'day-list' }, items));
   else card.append(h('p', { class: 'empty', text: date > today ? 'まだ先の日付です。' : 'この日の記録はありません。' }));
+
+  // この日が期限のタスク（タップでタスク画面へ）
+  if (tasks.length) {
+    card.append(h('h3', { class: 'day-sub', text: `この日が期限のタスク（${tasks.length} 件）` }),
+      h('ul', { class: 'day-list' }, tasks.map((t) => {
+        const done = t.status === 'done';
+        const late = !done && date < today;
+        const status = `${TASK_STATUS_LABEL[t.status] || ''}${late ? '・期限切れ' : ''}`;
+        return h('li', {},
+          h('button', { type: 'button', class: `day-item day-task${done ? ' done' : ''}${late ? ' late' : ''}`, onclick: () => { location.href = './tasks/'; }, 'aria-label': `タスク ${t.title || '（無題）'}（${status}）をタスク画面で開く` },
+            h('span', { class: 'day-kind', text: t.title || '（無題）' }),
+            h('span', { class: 'day-detail', text: [status, t.assignee ? `担当 ${t.assignee}` : null].filter(Boolean).join('　') }),
+          ));
+      })));
+  }
 
   if (date <= today) {
     card.append(h('div', { class: 'day-add' },

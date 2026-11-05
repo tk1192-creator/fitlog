@@ -272,3 +272,22 @@ test('通知: 最後に体重を記録した日付', () => {
   eq(cloud.lastWeightDate(data({ weights: [W('a', '2026-11-02', 70), W('b', '2026-11-05', 69), W('c', '2026-11-03', 69.5)] })), '2026-11-05');
   eq(cloud.lastWeightDate(data({})), null);
 });
+
+/* ---------- 新しい版の記録を消さない（v2.6.0） ---------- */
+test('前方互換: 知らない項目・設定は読み込みで消えない', () => {
+  const d = normalize({ ...defaultData(), plans: [{ id: 'p1', date: '2026-11-10', title: 'ジム' }], settings: { ...defaultData().settings, futureFlag: 'x' } });
+  eq(d.plans, [{ id: 'p1', date: '2026-11-10', title: 'ジム' }]);
+  eq(d.settings.futureFlag, 'x');
+});
+test('前方互換: 知らない一覧も 3 者統合する（相手側の追加は残り、削除は反映）', () => {
+  const P = (id) => ({ id, date: '2026-11-10', title: id });
+  const base = { plans: ['a', 'b'] };
+  const local = data({ plans: [P('a'), P('b')] }); // この端末は古い内容のまま
+  const remote = data({ plans: [P('a'), P('n')] }); // 別の端末で b を削除、n を追加
+  eq(ids(cloud.mergeRecords(base, local, remote), 'plans'), ['a', 'n']);
+  eq(cloud.idsOf(remote).plans, ['a', 'n']);
+});
+test('前方互換: 片方にしかない知らない一覧も残る', () => {
+  const remote = data({ habits: [{ id: 'h1', name: '水' }] });
+  eq(cloud.mergeRecords({}, data({}), remote).habits, [{ id: 'h1', name: '水' }]);
+});

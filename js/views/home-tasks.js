@@ -19,6 +19,23 @@ export function loadTasks() {
   }
 }
 
+export const TASK_STATUS_LABEL = { todo: '未着手', doing: '作業中', review: '確認待ち', done: '完了' };
+
+/** 期限の日付ごとのタスク（カレンダー用。v2.6.0）。完了も含め、日付の中は未完了 → 優先度の高い順 */
+export function tasksByDue(tasks) {
+  const rank = { high: 3, medium: 2, low: 1 };
+  const map = new Map();
+  for (const t of tasks || []) {
+    if (!t || typeof t.due !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(t.due)) continue;
+    if (!map.has(t.due)) map.set(t.due, []);
+    map.get(t.due).push(t);
+  }
+  for (const list of map.values()) {
+    list.sort((a, b) => ((a.status === 'done') - (b.status === 'done')) || ((rank[b.priority] || 0) - (rank[a.priority] || 0)));
+  }
+  return map;
+}
+
 /** 集計（期限切れ・今日が期限・作業中・今日やる）と、表示するタスク */
 export function summarizeTasks(tasks, today) {
   const open = tasks.filter((t) => t && t.status !== 'done' && typeof t.due === 'string');

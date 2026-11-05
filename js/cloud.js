@@ -26,6 +26,20 @@ const PBKDF2_ITERATIONS = 310000;
 const PUSH_DELAY_MS = 3000;
 const LISTS = ['weights', 'strength', 'jogs', 'daily'];
 
+/**
+ * 統合する一覧の名前。既知の一覧に加えて、新しい版で増えた一覧（ID 付きの記録の配列）も同じ方法で統合する。
+ * 古い版の端末で同期しても、新しい版の記録が消えたり古い内容で上書きされたりしないようにするため（v2.6.0）。
+ */
+function listKeys(...objs) {
+  const keys = new Set(LISTS);
+  for (const o of objs) {
+    for (const [k, v] of Object.entries(o || {})) {
+      if (Array.isArray(v) && v.length && v.every((x) => x && typeof x === 'object' && typeof x.id === 'string')) keys.add(k);
+    }
+  }
+  return [...keys];
+}
+
 /* ======================================================================
    統合（純粋関数。テスト対象）
    ====================================================================== */
@@ -40,7 +54,7 @@ const LISTS = ['weights', 'strength', 'jogs', 'daily'];
  */
 export function mergeRecords(baseIds, local, remote) {
   const out = { ...remote, ...local, settings: { ...remote.settings, ...local.settings } };
-  for (const key of LISTS) {
+  for (const key of listKeys(local, remote)) {
     const base = new Set((baseIds && baseIds[key]) || []);
     const localList = local[key] || [];
     const remoteList = remote[key] || [];
@@ -56,6 +70,15 @@ export function mergeRecords(baseIds, local, remote) {
     out[key] = merged;
   }
   out.exercises = [...new Set([...(local.exercises || []), ...(remote.exercises || [])])];
+  // お祝い済みの節目・バッジは両方の端末の分を合わせる（別の端末で同じお祝いが出ないように）
+  const lc = local.settings && local.settings.celebrated;
+  const rc = remote.settings && remote.settings.celebrated;
+  if (lc && rc) {
+    out.settings.celebrated = {
+      milestones: [...new Set([...(lc.milestones || []), ...(rc.milestones || [])])],
+      badges: [...new Set([...(lc.badges || []), ...(rc.badges || [])])],
+    };
+  }
   // 1 日 1 件の一覧（体重・食事）は、同じ日付が重なったら端末側（先に並べた方）を残す
   return normalize(out);
 }
@@ -63,7 +86,7 @@ export function mergeRecords(baseIds, local, remote) {
 /** 各一覧の ID（次の統合の base にする） */
 export function idsOf(data) {
   const ids = {};
-  for (const key of LISTS) ids[key] = (data[key] || []).map((x) => x.id);
+  for (const key of listKeys(data)) ids[key] = (data[key] || []).map((x) => x.id);
   return ids;
 }
 

@@ -28,17 +28,21 @@ function confettiGoal() {
 
 /**
  * メッセージを表示する。
- * @param {{type: 'pb'|'first'|'goal', text: string}[]} messages
+ * @param {{type: 'pb'|'first'|'goal'|'milestone'|'badge', text: string}[]} messages
  */
 export function celebrate(messages) {
-  const hasGoal = messages.some((m) => m.type === 'goal');
-  const hasPB = messages.some((m) => m.type === 'pb');
+  const has = (t) => messages.some((m) => m.type === t);
+  const hasGoal = has('goal');
 
   if (hasGoal) confettiGoal();
-  else if (hasPB) confettiPB();
+  else if (has('pb') || has('milestone') || has('badge')) confettiPB();
 
-  const title = hasGoal ? '目標達成！' : hasPB ? '自己ベスト更新！' : '初記録！';
-  const icon = hasGoal ? '🏆' : hasPB ? '🎉' : '📝';
+  // 見出しは、いちばん大きな出来事に合わせる
+  const [title, icon] = hasGoal ? ['目標達成！', '🏆']
+    : has('pb') ? ['自己ベスト更新！', '🎉']
+      : has('milestone') ? ['節目を突破！', '🎯']
+        : has('badge') ? ['バッジ獲得！', '🏅']
+          : ['初記録！', '📝'];
 
   document.querySelector('.celebrate')?.remove();
   const close = () => {

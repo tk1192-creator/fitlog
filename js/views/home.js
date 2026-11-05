@@ -2,6 +2,7 @@
 import { bmi, bmiCategory, fmtNum, latestWeight, startWeight } from '../calc.js';
 import { fmtDateShort, h } from '../ui.js';
 import { goalCards, signed } from './home-goal.js';
+import { reviewCard } from './home-review.js';
 import { tasksCard } from './home-tasks.js';
 import { getConfig as cloudConfig } from '../cloud.js';
 
@@ -79,6 +80,8 @@ export function render(root, app) {
   ));
 
   root.append(quickAdd(app));
+  const review = reviewCard(app);
+  if (review) root.append(review);
   root.append(tasksCard());
   root.append(...goalCards(app, latest));
 }

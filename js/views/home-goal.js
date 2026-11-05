@@ -2,6 +2,7 @@
 import { addDays, daysBetween, energyPlan, exerciseDays, fmtInt, fmtNum, startWeight, streakWeeks, todayStr, weekStart, weeklyChangeNeeded } from '../calc.js';
 import { goalDirection, meetsGoal } from '../pb.js';
 import { INTAKE_MIN_DAYS, estimatedExpenditure, forecastGoal, weightTrend } from '../trend.js';
+import { evaluateBadges, milestoneState } from '../badges.js';
 import { fmtDateLong, h } from '../ui.js';
 
 export function stat(label, value, sub) {
@@ -80,6 +81,14 @@ function goalCard(app, latest) {
       ),
       h('p', { class: 'card-note', text: `開始時（${fmtNum(start.weightKg)}kg）から目標までの ${progress}% を達成` }),
     );
+  }
+  // 次の節目（目標までを 1kg ごとに区切ったもの。7 日平均で判定）
+  const ms = reached ? null : milestoneState(app.data);
+  if (ms && ms.next != null) {
+    card.append(h('p', { class: 'milestone-note' },
+      '🎯 次の節目 ', h('strong', { text: `${fmtNum(ms.next)}kg` }), ' まで あと ', h('strong', { text: `${fmtNum(ms.remain, 1)}kg` }),
+      h('span', { class: 'milestone-sub', text: `（7 日平均 ${fmtNum(ms.current, 1)}kg・節目 ${ms.reached.length}/${ms.steps.length} 達成）` }),
+    ));
   }
   return card;
 }
@@ -218,5 +227,15 @@ function weekCard(app) {
       }),
     ),
     h('p', { class: 'streak' }, '🔥 連続達成 ', h('strong', { text: `${streak} 週` }), streak ? '' : '（今週から始めましょう）'),
+    badgeLink(app),
   );
+}
+
+/** バッジの獲得数（タップでバッジの一覧へ） */
+function badgeLink(app) {
+  const all = evaluateBadges(app.data);
+  const got = all.filter((b) => b.earned).length;
+  return h('button', { type: 'button', class: 'week-badges', onclick: () => app.navigate('charts', { kind: 'bests' }) },
+    h('span', {}, '🏅 バッジ ', h('strong', { text: `${got} / ${all.length}` })),
+    h('span', { 'aria-hidden': 'true', text: '›' }));
 }
