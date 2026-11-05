@@ -228,6 +228,7 @@ function weekCard(app) {
     ),
     h('p', { class: 'streak' }, '🔥 連続達成 ', h('strong', { text: `${streak} 週` }), streak ? '' : '（今週から始めましょう）'),
     badgeLink(app),
+    h('button', { type: 'button', class: 'btn btn-block week-plan-btn', text: '＋ 運動の予定を入れる', onclick: () => app.navigate('calendar', { date: todayStr() }) }),
   );
 }
 

@@ -6,5 +6,6 @@ import './cloud.test.js';
 import './share.test.js';
 import './trend.test.js';
 import './badges.test.js';
+import './plans.test.js';
 
 report();

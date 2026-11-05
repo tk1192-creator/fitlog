@@ -1,6 +1,7 @@
 // 設定画面: プロフィール・目標、種目、データの入出力、危険な操作
 import { ACTIVITY_LEVELS, daysBetween, todayStr } from '../calc.js';
-import { defaultData, exportCSV, exportJSON, normalize } from '../storage.js';
+import { defaultData, exportCSV, exportJSON, newId, normalize } from '../storage.js';
+import { REST_SCOPES, restAlertSettings } from '../plans.js';
 import { generateSample } from '../sample.js';
 import { clearAllTasks, clearDoneTasks, countDoneTasks, exportTasksJSON, loadTasks } from './home-tasks.js';
 import { choiceDialog, confirmDialog, field, fmtDateLong, h, toast } from '../ui.js';
@@ -17,7 +18,85 @@ export function unmount() {
 }
 
 export function render(root, app) {
-  root.append(cloudCard(app), shareCard(app), profileCard(app), exerciseCard(app), lockCard(app), dataCard(app), taskDataCard(app), dangerCard(app), aboutCard());
+  root.append(cloudCard(app), habitCard(app), shareCard(app), profileCard(app), exerciseCard(app), lockCard(app), dataCard(app), taskDataCard(app), dangerCard(app), aboutCard());
+}
+
+/* ---------- 休みのお知らせ・習慣チェック（v2.7.0。js/plans.js） ---------- */
+
+const HABIT_MAX = 10;
+
+function habitCard(app) {
+  const card = h('section', { class: 'card' }, h('h2', { class: 'card-title', text: '休みのお知らせ・習慣' }));
+
+  // 休みのお知らせ
+  const r = restAlertSettings(app.data);
+  const enabled = h('input', { type: 'checkbox', checked: r.enabled });
+  const days = h('select', {}, [2, 3, 4, 5, 7].map((n) => h('option', { value: String(n), text: `${n} 日`, selected: n === r.days })));
+  const scope = h('select', {}, REST_SCOPES.map(([v, l]) => h('option', { value: v, text: l, selected: v === r.scope })));
+  const saveRest = h('button', { type: 'button', class: 'btn btn-primary btn-block', text: '休みのお知らせを保存' });
+  saveRest.addEventListener('click', () => {
+    app.update((d) => { d.settings.restAlert = { enabled: enabled.checked, days: Number(days.value), scope: scope.value }; });
+    toast(enabled.checked ? `${days.value} 日続けて休んだら知らせます` : '休みのお知らせをオフにしました');
+  });
+  card.append(
+    h('h3', { class: 'notify-title', text: '休みのお知らせ' }),
+    h('p', { class: 'card-note', text: '続けて休んだ日数が設定に届くと、ホームに表示し、夜 21 時ごろの通知（通知をオンにした端末）でも知らせます。' }),
+    h('label', { class: 'check-row' }, enabled, h('span', { text: '続けて休んだら知らせる' })),
+    h('div', { class: 'row-2' }, field('何日休んだら', days), field('数える記録', scope)),
+    saveRest,
+  );
+
+  // 習慣チェックの項目
+  const habits = app.data.habits || [];
+  const list = h('ul', { class: 'habit-edit-list' }, habits.map((x) => {
+    const name = h('input', { type: 'text', value: x.name, maxlength: '20', 'aria-label': `習慣「${x.name}」の名前` });
+    return h('li', { class: 'habit-edit' },
+      name,
+      h('button', {
+        type: 'button', class: 'btn btn-sm', text: '名前を保存',
+        onclick: () => {
+          const v = name.value.trim();
+          if (!v) return toast('名前を入れてください');
+          app.update((d) => { d.habits = d.habits.map((y) => (y.id === x.id ? { ...y, name: v.slice(0, 20) } : y)); });
+          toast('名前を変えました');
+        },
+      }),
+      h('button', {
+        type: 'button', class: 'btn btn-sm btn-danger', text: '削除',
+        onclick: async () => {
+          const n = (app.data.habitLogs || []).filter((l) => l.habitId === x.id).length;
+          const ok = await confirmDialog(`習慣「${x.name}」を削除します。${n ? `\nこれまでのチェック ${n} 日分も消えます。` : ''}`, { title: '習慣を削除', okText: '削除する', danger: true });
+          if (!ok) return;
+          app.update((d) => {
+            d.habits = d.habits.filter((y) => y.id !== x.id);
+            d.habitLogs = d.habitLogs.filter((l) => l.habitId !== x.id);
+          });
+          toast('削除しました');
+        },
+      }),
+    );
+  }));
+  const newName = h('input', { type: 'text', maxlength: '20', placeholder: '例：ストレッチ、水を 2L、23 時までに寝る' });
+  const add = h('form', { class: 'inline-form' },
+    newName,
+    h('button', { type: 'submit', class: 'btn btn-primary', text: '追加' }),
+  );
+  add.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = newName.value.trim();
+    if (!v) return toast('習慣の名前を入れてください');
+    if (habits.length >= HABIT_MAX) return toast(`習慣は ${HABIT_MAX} 個までです`);
+    if (habits.some((x) => x.name === v)) return toast('同じ名前の習慣があります');
+    app.update((d) => { d.habits.push({ id: newId(), name: v.slice(0, 20) }); });
+    toast(`「${v}」を追加しました。ホームの「今日の予定・習慣」でチェックできます`);
+  });
+  card.append(
+    h('h3', { class: 'notify-title', text: '習慣チェックの項目' }),
+    h('p', { class: 'card-note', text: '毎日続けたいことを登録すると、ホームでチェックでき、続いた日数（🔥）を表示します。運動した日数には数えません。' }),
+    habits.length ? list : h('p', { class: 'empty', text: 'まだ項目がありません。' }),
+    add,
+  );
+  return card;
 }
 
 /* ---------- LINE で家族に報告（js/share.js。送信は保存先の GitHub Actions） ---------- */
@@ -216,8 +295,8 @@ function cloudCard(app) {
 /** 入力忘れのお知らせ（21 時以降、今日の体重がまだなら通知） */
 function notifySection(app) {
   const box = h('div', { class: 'notify-box' },
-    h('h3', { class: 'notify-title', text: '入力忘れのお知らせ（毎日 21 時ごろ）' }),
-    h('p', { class: 'card-note', text: 'その日の体重がまだ記録されていないときだけ、この端末に通知します（GitHub の混み具合で数分〜数十分遅れることがあります）。' }),
+    h('h3', { class: 'notify-title', text: 'お知らせ（朝 7 時ごろ・夜 21 時ごろ）' }),
+    h('p', { class: 'card-note', text: '朝：今日の運動の予定があれば知らせます。夜：体重がまだ・予定の運動がまだ記録されていない・休みが続いているときに知らせます。何もなければ届きません（GitHub の混み具合で数分〜数十分遅れることがあります）。' }),
   );
   const sup = cloud.notifySupport();
   if (cloud.isNotifyOn()) {
@@ -240,7 +319,7 @@ function notifySection(app) {
       btn.textContent = '設定しています…';
       try {
         await cloud.enableNotify();
-        toast('通知をオンにしました（21 時ごろ、体重が未記録の日に届きます）');
+        toast('通知をオンにしました（朝 7 時ごろ・夜 21 時ごろ、知らせることがある日に届きます）');
         app.render();
       } catch (e) {
         toast(e.message || '通知をオンにできませんでした');

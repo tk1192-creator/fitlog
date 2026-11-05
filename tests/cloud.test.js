@@ -240,7 +240,7 @@ testSeq('通知: notify/status.json がない保存先には何も書かない',
   await cloud.syncNow();
   eq(gh.files.has('notify/status.json'), false);
 });
-testSeq('通知: 通知を使っている保存先には「最後に体重を記録した日付」だけを書く', async () => {
+testSeq('通知: 通知を使っている保存先には「最後の記録日・予定・休みのお知らせの設定」だけを書く', async () => {
   gh.files.set('notify/status.json', { sha: 'st0', text: '{"lastWeightDate":null}' });
   const st = JSON.parse(localStorage.getItem('stride.cloud.state'));
   delete st.notifyActive; delete st.notifyCheckedAt;
@@ -248,7 +248,9 @@ testSeq('通知: 通知を使っている保存先には「最後に体重を記
   await cloud.syncNow();
   const status = JSON.parse(gh.files.get('notify/status.json').text);
   eq(status.lastWeightDate, '2026-11-04');
-  eq(Object.keys(status).sort(), ['lastWeightDate', 'updatedAt'], '体重の値などは含まない');
+  eq(Object.keys(status).sort(), ['lastExerciseDate', 'lastJogDate', 'lastStrengthDate', 'lastWeightDate', 'plans', 'restAlert', 'updatedAt']);
+  const text = gh.files.get('notify/status.json').text;
+  eq(['weightKg', 'bodyFat', 'intakeKcal', 'distanceKm', 'memo'].some((k) => text.includes(k)), false, '記録の値やメモは含まない');
 });
 
 testSeq('同期の後片付け（端末のデータを元に戻す）', async () => {
@@ -275,19 +277,19 @@ test('通知: 最後に体重を記録した日付', () => {
 
 /* ---------- 新しい版の記録を消さない（v2.6.0） ---------- */
 test('前方互換: 知らない項目・設定は読み込みで消えない', () => {
-  const d = normalize({ ...defaultData(), plans: [{ id: 'p1', date: '2026-11-10', title: 'ジム' }], settings: { ...defaultData().settings, futureFlag: 'x' } });
-  eq(d.plans, [{ id: 'p1', date: '2026-11-10', title: 'ジム' }]);
+  const d = normalize({ ...defaultData(), futureList: [{ id: 'p1', date: '2026-11-10', title: 'ジム' }], settings: { ...defaultData().settings, futureFlag: 'x' } });
+  eq(d.futureList, [{ id: 'p1', date: '2026-11-10', title: 'ジム' }]);
   eq(d.settings.futureFlag, 'x');
 });
 test('前方互換: 知らない一覧も 3 者統合する（相手側の追加は残り、削除は反映）', () => {
   const P = (id) => ({ id, date: '2026-11-10', title: id });
-  const base = { plans: ['a', 'b'] };
-  const local = data({ plans: [P('a'), P('b')] }); // この端末は古い内容のまま
-  const remote = data({ plans: [P('a'), P('n')] }); // 別の端末で b を削除、n を追加
-  eq(ids(cloud.mergeRecords(base, local, remote), 'plans'), ['a', 'n']);
-  eq(cloud.idsOf(remote).plans, ['a', 'n']);
+  const base = { futureList: ['a', 'b'] };
+  const local = data({ futureList: [P('a'), P('b')] }); // この端末は古い内容のまま
+  const remote = data({ futureList: [P('a'), P('n')] }); // 別の端末で b を削除、n を追加
+  eq(ids(cloud.mergeRecords(base, local, remote), 'futureList'), ['a', 'n']);
+  eq(cloud.idsOf(remote).futureList, ['a', 'n']);
 });
 test('前方互換: 片方にしかない知らない一覧も残る', () => {
-  const remote = data({ habits: [{ id: 'h1', name: '水' }] });
-  eq(cloud.mergeRecords({}, data({}), remote).habits, [{ id: 'h1', name: '水' }]);
+  const remote = data({ futureItems: [{ id: 'h1', name: '水' }] });
+  eq(cloud.mergeRecords({}, data({}), remote).futureItems, [{ id: 'h1', name: '水' }]);
 });

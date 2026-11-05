@@ -24,12 +24,17 @@ export function defaultData() {
       // お祝い済みの節目（kg）とバッジ（v2.6.0）。null は「まだ調べていない」（最初の保存時に、それまでの分はお祝いせずに記録する）
       celebrated: null,
       reviewDismissed: null, // 先週のふりかえりを閉じた週（その週の月曜日）
+      // 休みのお知らせ（v2.7.0）：days 日続けて休んだら知らせる。scope は 'strength'（筋トレだけ）か 'all'（運動すべて）
+      restAlert: { enabled: true, days: 3, scope: 'strength' },
     },
     exercises: [...DEFAULT_EXERCISES],
     weights: [],
     strength: [],
     jogs: [],
     daily: [], // 食事・歩数（1 日 1 件）
+    plans: [], // 運動の予定（v2.7.0）{id, date, time('HH:MM' か ''), kind('strength'|'jog'|'other'), title, memo}
+    habits: [], // 習慣の項目（v2.7.0）{id, name}
+    habitLogs: [], // 習慣のチェック（v2.7.0）{id, date, habitId}。1 日 1 項目 1 件
   };
 }
 
@@ -109,6 +114,11 @@ export function normalize(obj) {
       }
       : null,
     reviewDismissed: DATE_RE.test(str(s.reviewDismissed)) ? s.reviewDismissed : null,
+    restAlert: {
+      enabled: !(s.restAlert && s.restAlert.enabled === false),
+      days: Math.min(14, Math.max(1, Math.round(num(s.restAlert && s.restAlert.days) || 3))),
+      scope: s.restAlert && s.restAlert.scope === 'all' ? 'all' : 'strength',
+    },
   };
 
   const exercises = Array.isArray(obj.exercises)
@@ -156,6 +166,33 @@ export function normalize(obj) {
     daily.push({ id: str(r.id) || newId(), date: r.date, intakeKcal: k, steps: st, memo: str(r.memo) });
   }
 
+  // 運動の予定・習慣（v2.7.0。v2.6.0 以前のデータには無いので空として扱う）
+  const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+  const plans = [];
+  for (const r of Array.isArray(obj.plans) ? obj.plans : []) {
+    if (!r || !DATE_RE.test(str(r.date))) continue;
+    plans.push({
+      id: str(r.id) || newId(), date: r.date, time: TIME_RE.test(str(r.time)) ? r.time : '',
+      kind: ['strength', 'jog', 'other'].includes(r.kind) ? r.kind : 'other',
+      title: str(r.title).trim().slice(0, 30), memo: str(r.memo).slice(0, 200),
+    });
+  }
+  const habits = [];
+  for (const r of Array.isArray(obj.habits) ? obj.habits : []) {
+    const name = str(r && r.name).trim().slice(0, 20);
+    if (name) habits.push({ id: str(r.id) || newId(), name });
+  }
+  const habitIds = new Set(habits.map((x) => x.id));
+  const habitLogs = [];
+  const seenLogs = new Set();
+  for (const r of Array.isArray(obj.habitLogs) ? obj.habitLogs : []) {
+    if (!r || !DATE_RE.test(str(r.date)) || !habitIds.has(str(r.habitId))) continue; // 消した項目のチェックは捨てる
+    const k = `${r.date}|${r.habitId}`;
+    if (seenLogs.has(k)) continue;
+    seenLogs.add(k);
+    habitLogs.push({ id: str(r.id) || newId(), date: r.date, habitId: str(r.habitId) });
+  }
+
   // この版が知らない項目（新しい版で増えたもの）は、中身に手を付けずに残す（v2.6.0）。
   // 古い版の端末で読み書き・同期しても、新しい版の記録や設定が消えないようにするため。
   const extra = {};
@@ -163,10 +200,10 @@ export function normalize(obj) {
   const extraSettings = {};
   for (const [k, v] of Object.entries(obj.settings || {})) if (!(k in base.settings)) extraSettings[k] = v;
 
-  return { ...extra, schemaVersion: SCHEMA_VERSION, settings: { ...extraSettings, ...settings }, exercises, weights, strength, jogs, daily };
+  return { ...extra, schemaVersion: SCHEMA_VERSION, settings: { ...extraSettings, ...settings }, exercises, weights, strength, jogs, daily, plans, habits, habitLogs };
 }
 
-const KNOWN_KEYS = ['schemaVersion', 'settings', 'exercises', 'weights', 'strength', 'jogs', 'daily'];
+const KNOWN_KEYS = ['schemaVersion', 'settings', 'exercises', 'weights', 'strength', 'jogs', 'daily', 'plans', 'habits', 'habitLogs'];
 
 /** ファイルとしてダウンロードさせる */
 function download(filename, content, mime) {

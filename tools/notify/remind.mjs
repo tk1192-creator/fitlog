@@ -1,9 +1,15 @@
-// STRIDE 入力忘れのお知らせを送る（保存先リポジトリの GitHub Actions で実行。.github/scripts/remind.mjs として置く）
+// STRIDE のお知らせを送る（保存先リポジトリの GitHub Actions で実行。.github/scripts/remind.mjs として置く）
+//
+// 朝（7 時台）：今日の運動の予定があれば知らせる（v2.7.0）
+// 夜（21 時以降）：次のどれかに当てはまれば 1 通にまとめて知らせる
+//   ・今日の体重がまだ記録されていない
+//   ・今日の予定の運動が、まだ記録されていない（v2.7.0）
+//   ・筋トレ（設定により運動すべて）を N 日続けて休んでいる（v2.7.0）
 //
 // 読むもの（すべて保存先リポジトリの中）
-//   notify/status.json  … アプリが書く「最後に体重を記録した日付」（記録の値は含まない）
+//   notify/status.json  … アプリが書く「最後の記録日・予定・休みのお知らせの設定」（記録の値は含まない）
 //   notify/sub-*.json   … 通知を受け取る端末の購読情報（アプリが書く）
-//   notify/sent.json    … このスクリプトが書く「最後に送った日付」（1 日 1 回にするため）
+//   notify/sent.json    … このスクリプトが書く「最後に送った日付」（朝・夜それぞれ 1 日 1 回にするため）
 // 送り先：登録された端末（Web プッシュ）と、LINE（シークレット LINE_USER_ID があれば、その人に 1 対 1 で）
 // 秘密の値（VAPID の秘密鍵、LINE の鍵）は Actions のシークレットから受け取り、ログには出さない。
 import webpush from 'web-push';
@@ -54,11 +60,41 @@ const hour = jst.getUTCHours();
 
 const status = (await readJSON('notify/status.json')).data || {};
 const sent = await readJSON('notify/sent.json');
+const sentData = sent.data || {};
+
+const daysBetween = (a, b) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86400000);
+const KIND = { strength: '筋トレ', jog: 'ジョギング', other: '運動' };
+const todaysPlans = (Array.isArray(status.plans) ? status.plans : []).filter((p) => p && p.date === today);
+const planLabel = (p) => `${p.time ? `${p.time} ` : ''}${p.title || KIND[p.kind] || '運動'}`;
+function planDone(p) {
+  if (p.kind === 'strength') return status.lastStrengthDate === today;
+  if (p.kind === 'jog') return status.lastJogDate === today;
+  return status.lastExerciseDate === today;
+}
+
+// 送る内容を決める（朝は 12 時前、夜は 21 時以降。テストは時刻・記録に関係なく送る）
+const mode = hour < 12 ? 'morning' : 'evening';
+let lines = [];
+if (mode === 'morning') {
+  if (todaysPlans.length) lines.push(`今日の予定：${todaysPlans.map(planLabel).join('、')}。がんばりましょう！`);
+} else {
+  if (status.lastWeightDate !== today) lines.push('今日の体重がまだ記録されていません。寝る前に記録しましょう。');
+  const notYet = todaysPlans.filter((p) => !planDone(p));
+  if (notYet.length) lines.push(`予定の「${notYet.map(planLabel).join('」「')}」はできましたか？ できたら記録しましょう。`);
+  const ra = status.restAlert || { enabled: false };
+  const last = ra.scope === 'all' ? status.lastExerciseDate : status.lastStrengthDate;
+  if (ra.enabled && last && daysBetween(last, today) >= (ra.days || 3)) {
+    const n = daysBetween(last, today);
+    lines.push(ra.scope === 'all' ? `運動を ${n} 日続けて休んでいます。明日は体を動かしましょう！` : `ジム（筋トレ）に ${n} 日行っていません。明日は行きましょう！`);
+  }
+}
 
 if (!test) {
-  if (hour < 21) { console.log('21 時前のため送りません'); process.exit(0); }
-  if (status.lastWeightDate === today) { console.log('今日の体重は記録済みのため送りません'); process.exit(0); }
-  if (sent.data && sent.data.lastSentDate === today) { console.log('今日はすでに送信済みです'); process.exit(0); }
+  if (mode === 'morning' && hour < 7) { console.log('7 時前のため送りません'); process.exit(0); }
+  if (mode === 'evening' && hour < 21) { console.log('21 時前のため送りません'); process.exit(0); }
+  if (!lines.length) { console.log(mode === 'morning' ? '今日の予定がないため送りません' : '今日はお知らせすることがありません（体重・予定とも記録済み）'); process.exit(0); }
+  const key = mode === 'morning' ? 'morningSentDate' : 'lastSentDate';
+  if (sentData[key] === today) { console.log('今日はすでに送信済みです'); process.exit(0); }
 }
 
 const lr = await api('notify');
@@ -68,13 +104,13 @@ const useLine = lineReady() && Boolean(lineUser);
 if (!subs.length && !useLine) { console.log('通知を受け取る端末・LINE が登録されていません'); process.exit(0); }
 
 const title = test ? 'STRIDE（テスト）' : 'STRIDE';
-const body = test ? '通知のテストです。届いていれば設定は完了です。' : '今日の体重がまだ記録されていません。寝る前に記録しましょう。';
+const body = test ? `通知のテストです。届いていれば設定は完了です。${lines.length ? `\n（今送るとしたら：${lines.join(' ')}）` : ''}` : lines.join('\n');
 let delivered = 0;
 
 // 1) 登録された端末（Web プッシュ）
 if (subs.length) {
   webpush.setVapidDetails('https://tk1192-creator.github.io/fitlog/', process.env.VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY);
-  const payload = JSON.stringify({ title, body, tag: test ? 'stride-test' : 'stride-remind', url: test ? './' : './#records' });
+  const payload = JSON.stringify({ title, body, tag: test ? 'stride-test' : `stride-${mode}`, url: test ? './' : mode === 'morning' ? './#calendar' : './#records' });
   for (const f of subs) {
     const { data, sha } = await readJSON(`notify/${f.name}`);
     if (!data || !data.subscription) continue;
@@ -109,5 +145,7 @@ if (useLine) {
   }
 }
 
-if (!test && delivered) await writeJSON('notify/sent.json', { lastSentDate: today }, sent.sha);
+if (!test && delivered) {
+  await writeJSON('notify/sent.json', { ...sentData, [mode === 'morning' ? 'morningSentDate' : 'lastSentDate']: today }, sent.sha);
+}
 console.log(`送信 ${delivered} 件 / 端末 ${subs.length} 件・LINE ${useLine ? 'あり' : 'なし'}${test ? '（テスト）' : ''}`);

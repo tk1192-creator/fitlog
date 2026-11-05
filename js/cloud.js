@@ -10,6 +10,7 @@
 
 import { load as loadLocal, newId, normalize, save as saveLocal } from './storage.js';
 import { readQueue, removeFromQueue, shareSettings, weeklySummary } from './share.js';
+import { notifyStatusOf } from './plans.js';
 
 const CONFIG_KEY = 'stride.cloud';
 const STATE_KEY = 'stride.cloud.state'; // { dirty, recordsSha, baseIds, tasksSha, tasksHash, lastSyncAt, lastError }
@@ -24,7 +25,7 @@ const WEEKLY_PATH = 'notify/weekly.json'; // LINE で家族に送る「今週の
 const OUTBOX_DIR = 'outbox'; // LINE で家族に送る自己ベストの報告（置かれると Actions がすぐ送って消す）
 const PBKDF2_ITERATIONS = 310000;
 const PUSH_DELAY_MS = 3000;
-const LISTS = ['weights', 'strength', 'jogs', 'daily'];
+const LISTS = ['weights', 'strength', 'jogs', 'daily', 'plans', 'habits', 'habitLogs'];
 
 /**
  * 統合する一覧の名前。既知の一覧に加えて、新しい版で増えた一覧（ID 付きの記録の配列）も同じ方法で統合する。
@@ -477,18 +478,20 @@ async function updateNotifyStatus() {
     setState({ notifyActive: active, notifyCheckedAt: new Date().toISOString() });
   }
   if (!active) return;
-  const last = lastWeightDate(loadLocal());
-  if (last === st.notifyLastWeightDate) return;
-  await writeNotifyStatus(cfg, last);
+  // 内容（最後の記録日・予定・休みのお知らせの設定）が変わったときだけ書く（v2.7.0）
+  const status = notifyStatusOf(loadLocal());
+  if (await sha256Hex(JSON.stringify(status)) === st.notifyStatusHash) return;
+  await writeNotifyStatus(cfg, status);
 }
 
-async function writeNotifyStatus(cfg, last) {
-  const body = JSON.stringify({ lastWeightDate: last, updatedAt: new Date().toISOString() });
+async function writeNotifyStatus(cfg, status) {
+  const body = JSON.stringify({ ...status, updatedAt: new Date().toISOString() });
+  const hash = await sha256Hex(JSON.stringify(status));
   for (let attempt = 0; attempt < 3; attempt++) {
     const cur = await getFile(cfg, NOTIFY_STATUS_PATH);
     try {
       await putFile(cfg, NOTIFY_STATUS_PATH, body, cur ? cur.sha : null);
-      setState({ notifyLastWeightDate: last, notifyActive: true });
+      setState({ notifyStatusHash: hash, notifyActive: true });
       return;
     } catch (e) {
       if (e.status === 409 || e.status === 422) continue;
@@ -580,7 +583,7 @@ export async function enableNotify() {
   const cur = await getFile(cfg, path);
   const label = /iPhone/.test(navigator.userAgent) ? 'iPhone' : /iPad/.test(navigator.userAgent) ? 'iPad' : 'PC';
   await putFile(cfg, path, JSON.stringify({ subscription: sub.toJSON(), device: label, createdAt: new Date().toISOString() }), cur ? cur.sha : null);
-  await writeNotifyStatus(cfg, lastWeightDate(loadLocal()));
+  await writeNotifyStatus(cfg, notifyStatusOf(loadLocal()));
   setConfig({ ...getConfig(), notify: { deviceId: id } });
   notify();
 }
