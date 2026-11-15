@@ -112,3 +112,17 @@ test('自重: 重量が空欄でも保存でき、重量ありの記録とは別
   const b = computeBests(d).strength['腕立て伏せ'];
   eq([b.maxWeight.value, b.maxReps.value], [10, 25]);
 });
+
+/* ---------- 「ジム」（重量・回数・セットなし。v2.11.2） ---------- */
+test('ジム: 回数・セットなしで保存でき、運動した日に数え、自己ベストの対象外', async () => {
+  const { normalize, defaultData } = await import('../js/storage.js');
+  const { exerciseDays } = await import('../js/calc.js');
+  const d = normalize({ ...defaultData(), strength: [
+    { id: 'g', date: '2026-11-14', exercise: 'ジム', weightKg: 50, reps: null, sets: null, memo: '' },
+    { id: 'x', date: '2026-11-15', exercise: 'ベンチプレス', weightKg: 40, reps: null, sets: 3, memo: '' },
+  ] });
+  eq(d.strength.map((r) => [r.exercise, r.weightKg, r.reps, r.sets]), [['ジム', null, null, null]], '回数だけ空欄の記録は捨てる');
+  eq([...exerciseDays(d)], ['2026-11-14']);
+  eq(evaluateSave('strength', d.strength[0], d), []);
+  eq(computeBests(d).strength['ジム'], undefined);
+});

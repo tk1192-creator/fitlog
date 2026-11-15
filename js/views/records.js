@@ -101,6 +101,7 @@ async function removeRecord(app, kind, rec) {
 
 /** 筋トレの内容の文（重量が空欄なら「自重」で、推定 1RM は出さない） */
 export function strengthText(r) {
+  if (r.reps == null) return 'ジムに行った（重量・回数なし）';
   if (r.weightKg == null) return `自重 × ${r.reps}回 × ${r.sets}セット`;
   return `${fmtNum(r.weightKg)}kg × ${r.reps}回 × ${r.sets}セット　1RM ${fmtNum(epley1RM(r.weightKg, r.reps))}kg`;
 }
@@ -204,10 +205,12 @@ function weightForm(app, editing) {
 
 /* ---------- 筋トレ ---------- */
 
+export const GYM = 'ジム'; // 種目のいちばん上。選ぶと重量・回数・セット数は入れない（ジムに行った記録だけ。v2.11.2）
+
 function strengthForm(app, editing) {
-  const exercises = app.data.exercises;
-  const selected = editing?.exercise || state.lastExercise || exercises[0];
-  const options = exercises.includes(selected) || !selected ? exercises : [selected, ...exercises];
+  const exercises = [GYM, ...app.data.exercises.filter((x) => x !== GYM)];
+  const selected = editing?.exercise || state.lastExercise || GYM;
+  const options = exercises.includes(selected) ? exercises : [...exercises, selected];
   const select = h('select', { name: 'exercise', required: true },
     options.map((ex) => h('option', { value: ex, text: ex, selected: ex === selected })),
   );
@@ -222,6 +225,19 @@ function strengthForm(app, editing) {
   weight.addEventListener('input', updateOrm);
   reps.addEventListener('input', updateOrm);
   updateOrm();
+  // 「ジム」を選んだときは、重量・回数・セット数を入れられないようにする
+  const gymNote = h('p', { class: 'notice gym-note', text: '「ジム」は、ジムに行ったことだけを記録します（重量・回数・セット数は入れません）。運動した日に数えます。' });
+  const applyGym = () => {
+    const gym = select.value === GYM;
+    for (const el of [weight, reps, sets]) {
+      el.disabled = gym;
+      if (gym) el.value = '';
+    }
+    if (!gym && !sets.value) sets.value = '3';
+    ormOut.style.display = gym ? 'none' : ''; // .live は display を指定しているので hidden では消えない
+    gymNote.hidden = !gym;
+  };
+  select.addEventListener('change', applyGym);
 
   const form = h('form', { class: 'form', novalidate: true },
     field('日付', dateInput(editing?.date)),
@@ -232,13 +248,22 @@ function strengthForm(app, editing) {
       field('セット数', sets),
     ),
     ormOut,
+    gymNote,
     field('メモ', memoInput(editing?.memo)),
     formActions(app, editing, 'strength'),
   );
+  applyGym();
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const f = new FormData(form);
+    if (select.value === GYM) {
+      const date = f.get('date');
+      if (!date) return toast('日付を入力してください');
+      if (date > todayStr()) return toast('未来の日付は入力できません');
+      state.lastExercise = GYM;
+      return commit(app, 'strength', { id: editing?.id || newId(), date, exercise: GYM, weightKg: null, reps: null, sets: null, memo: String(f.get('memo') || '').trim() }, editing);
+    }
     const rec = {
       id: editing?.id || newId(),
       date: f.get('date'),

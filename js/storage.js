@@ -156,10 +156,13 @@ export function normalize(obj) {
   const strength = [];
   for (const r of obj.strength) {
     if (!r || !DATE_RE.test(str(r.date)) || !str(r.exercise).trim()) continue;
-    if (!(num(r.reps) > 0) || !(num(r.sets) > 0)) continue; // 重量は空欄でもよい（自重の種目。v2.11.1）
+    // 重量は空欄でもよい（自重の種目。v2.11.1）。回数・セット数がどちらも空欄なら「ジムに行った」記録（v2.11.2）
+    const visit = num(r.reps) == null && num(r.sets) == null;
+    if (!visit && (!(num(r.reps) > 0) || !(num(r.sets) > 0))) continue;
     strength.push({
       id: str(r.id) || newId(), date: r.date, exercise: str(r.exercise).trim(),
-      weightKg: num(r.weightKg) > 0 ? num(r.weightKg) : null, reps: Math.round(num(r.reps)), sets: Math.round(num(r.sets)), memo: str(r.memo),
+      weightKg: !visit && num(r.weightKg) > 0 ? num(r.weightKg) : null,
+      reps: visit ? null : Math.round(num(r.reps)), sets: visit ? null : Math.round(num(r.sets)), memo: str(r.memo),
     });
     if (!exercises.includes(r.exercise.trim())) exercises.push(r.exercise.trim());
   }

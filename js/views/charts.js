@@ -226,7 +226,7 @@ function renderWeight(root, app) {
 /* ---------- 筋トレ ---------- */
 
 function renderStrength(root, app) {
-  const used = [...new Set(app.data.strength.map((r) => r.exercise))];
+  const used = [...new Set(app.data.strength.filter((r) => r.weightKg != null).map((r) => r.exercise))]; // 重量を入れた種目だけ
   const choices = [...app.data.exercises.filter((e) => used.includes(e)), ...used.filter((e) => !app.data.exercises.includes(e))];
   if (!choices.length) {
     root.append(emptyCard('筋トレの推移', 'まだ筋トレの記録がありません。'));

@@ -22,6 +22,7 @@ export function meetsGoal(weightKg, targetKg, direction) {
 export function computeBests(data) {
   const strength = {};
   for (const r of sortByDate(data.strength)) {
+    if (r.reps == null) continue; // ジムに行っただけの記録（v2.11.2）
     const b = strength[r.exercise] || (strength[r.exercise] = { maxWeight: null, max1RM: null, maxReps: null, count: 0 });
     b.count++;
     if (r.weightKg == null) {
@@ -70,8 +71,10 @@ export function evaluateSave(kind, rec, data) {
   return [];
 }
 
-function evalStrength(rec, all) {
+function evalStrength(rec, allRecords) {
   const ex = rec.exercise;
+  if (rec.reps == null) return []; // ジムに行っただけの記録は、自己ベストの判定をしない
+  const all = allRecords.filter((x) => x.reps != null);
   // 自重（重量なし）の記録は、自重の記録どうしで回数を比べる
   if (rec.weightKg == null) {
     const prev = all.filter((x) => x.weightKg == null);

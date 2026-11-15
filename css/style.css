@@ -840,3 +840,7 @@ textarea { width: 100%; min-height: 52px; padding: 10px 14px; border: 1px solid 
 .quick-activity .quick-plus { background: linear-gradient(135deg, #a78bfa, #7c3aed) !important; color: #fff !important; }
 .hero-reveal { cursor: pointer; text-align: left; color: inherit; font: inherit; }
 .quick-add .quick-label { white-space: nowrap; }
+
+/* 筋トレの「ジム」（v2.11.2）：入れない欄は薄く */
+.row-3 input:disabled { opacity: 0.45; }
+.gym-note { margin: 0; }

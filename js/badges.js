@@ -79,7 +79,7 @@ function metrics(data) {
     weightChange: weightChangeTimeline(data),
     goal: goal ? [{ date: goal.date, value: 1 }] : [],
     strengthDays: count([...new Set(strength.map((r) => r.date))].sort()),
-    volume: cumulative(strength, (r) => ((r.weightKg || 0) * r.reps * r.sets) / 1000), // 自重は 0 として数える
+    volume: cumulative(strength, (r) => ((r.weightKg || 0) * (r.reps || 0) * (r.sets || 0)) / 1000), // 自重・ジムだけは 0 として数える
     pbCount: count(pbEventsBetween(data, '0000-01-01', '9999-12-31', { weight: false }).map((e) => e.date)),
     jogKm: cumulative(jogs, (j) => j.distanceKm),
     longestJog: runningBest(jogs.map((j) => ({ date: j.date, value: j.distanceKm }))),
