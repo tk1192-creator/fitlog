@@ -4,6 +4,7 @@ import { formatDuration, formatPace, paceSecPerKm, todayStr } from './calc.js';
 const KEY = 'fitlog.v1';
 export const SCHEMA_VERSION = 2; // 2: 食事・歩数（daily）と性別・活動レベル・歩数目標を追加
 
+export const DEFAULT_ACTIVITIES = ['ダンス', 'ヨガ', 'ストレッチ', '水泳', 'ウォーキング'];
 export const DEFAULT_EXERCISES = ['ベンチプレス', 'スクワット', 'デッドリフト', 'ラットプルダウン', 'ショルダープレス'];
 
 export function defaultData() {
@@ -28,6 +29,10 @@ export function defaultData() {
       restAlert: { enabled: true, days: 3, scope: 'strength' },
       // よく使うリンク（v2.9.3）。ホームに表示する。{title, url}（https のみ、6 件まで）
       links: [],
+      // v2.11.0：ホームで体重を大きく出さない／使う記録の種類／ダンス・その他の種目
+      hideWeight: false,
+      recordTypes: { strength: true, jog: true, activity: false },
+      activityNames: [...DEFAULT_ACTIVITIES],
     },
     exercises: [...DEFAULT_EXERCISES],
     weights: [],
@@ -37,6 +42,7 @@ export function defaultData() {
     plans: [], // 運動の予定（v2.7.0）{id, date, time('HH:MM' か ''), kind('strength'|'jog'|'other'), title, memo}
     habits: [], // 習慣の項目（v2.7.0）{id, name}
     habitLogs: [], // 習慣のチェック（v2.7.0）{id, date, habitId}。1 日 1 項目 1 件
+    activities: [], // ダンス・その他の運動（v2.11.0）{id, date, name, minutes, memo}
   };
 }
 
@@ -119,9 +125,18 @@ export function normalize(obj) {
     restAlert: {
       enabled: !(s.restAlert && s.restAlert.enabled === false),
       days: Math.min(14, Math.max(1, Math.round(num(s.restAlert && s.restAlert.days) || 3))),
-      scope: s.restAlert && s.restAlert.scope === 'all' ? 'all' : 'strength',
+      scope: s.restAlert && ['all', 'activity'].includes(s.restAlert.scope) ? s.restAlert.scope : 'strength',
     },
     links: normalizeLinks(s.links),
+    hideWeight: Boolean(s.hideWeight),
+    recordTypes: {
+      strength: !(s.recordTypes && s.recordTypes.strength === false),
+      jog: !(s.recordTypes && s.recordTypes.jog === false),
+      activity: Boolean(s.recordTypes && s.recordTypes.activity),
+    },
+    activityNames: Array.isArray(s.activityNames)
+      ? [...new Set(s.activityNames.map(str).map((x) => x.trim().slice(0, 20)).filter(Boolean))].slice(0, 20)
+      : [...DEFAULT_ACTIVITIES],
   };
 
   const exercises = Array.isArray(obj.exercises)
@@ -176,7 +191,7 @@ export function normalize(obj) {
     if (!r || !DATE_RE.test(str(r.date))) continue;
     plans.push({
       id: str(r.id) || newId(), date: r.date, time: TIME_RE.test(str(r.time)) ? r.time : '',
-      kind: ['strength', 'jog', 'other'].includes(r.kind) ? r.kind : 'other',
+      kind: ['strength', 'jog', 'activity', 'other'].includes(r.kind) ? r.kind : 'other',
       title: str(r.title).trim().slice(0, 30), memo: str(r.memo).slice(0, 200),
     });
   }
@@ -196,6 +211,15 @@ export function normalize(obj) {
     habitLogs.push({ id: str(r.id) || newId(), date: r.date, habitId: str(r.habitId) });
   }
 
+  // ダンス・その他の運動（v2.11.0）。時間（分）は任意
+  const activities = [];
+  for (const r of Array.isArray(obj.activities) ? obj.activities : []) {
+    const name = str(r && r.name).trim().slice(0, 20);
+    if (!r || !DATE_RE.test(str(r.date)) || !name) continue;
+    const min = num(r.minutes);
+    activities.push({ id: str(r.id) || newId(), date: r.date, name, minutes: min > 0 && min <= 600 ? Math.round(min) : null, memo: str(r.memo).slice(0, 200) });
+  }
+
   // この版が知らない項目（新しい版で増えたもの）は、中身に手を付けずに残す（v2.6.0）。
   // 古い版の端末で読み書き・同期しても、新しい版の記録や設定が消えないようにするため。
   const extra = {};
@@ -203,7 +227,7 @@ export function normalize(obj) {
   const extraSettings = {};
   for (const [k, v] of Object.entries(obj.settings || {})) if (!(k in base.settings)) extraSettings[k] = v;
 
-  return { ...extra, schemaVersion: SCHEMA_VERSION, settings: { ...extraSettings, ...settings }, exercises, weights, strength, jogs, daily, plans, habits, habitLogs };
+  return { ...extra, schemaVersion: SCHEMA_VERSION, settings: { ...extraSettings, ...settings }, exercises, weights, strength, jogs, daily, plans, habits, habitLogs, activities };
 }
 
 /** よく使うリンクの検証（https の URL だけ。名前は 20 文字、6 件まで） */
@@ -221,7 +245,7 @@ export function normalizeLinks(list) {
   return out;
 }
 
-const KNOWN_KEYS = ['schemaVersion', 'settings', 'exercises', 'weights', 'strength', 'jogs', 'daily', 'plans', 'habits', 'habitLogs'];
+const KNOWN_KEYS = ['schemaVersion', 'settings', 'exercises', 'weights', 'strength', 'jogs', 'daily', 'plans', 'habits', 'habitLogs', 'activities'];
 
 /** ファイルとしてダウンロードさせる */
 function download(filename, content, mime) {

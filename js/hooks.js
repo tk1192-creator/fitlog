@@ -6,7 +6,7 @@ import { getConfig as cloudConfig } from './cloud.js';
 import { earnedBadgeIds, evaluateBadges, milestoneState } from './badges.js';
 import { fmtNum } from './calc.js';
 
-const LIST_KEY = { weight: 'weights', strength: 'strength', jog: 'jogs', daily: 'daily' };
+const LIST_KEY = { weight: 'weights', strength: 'strength', jog: 'jogs', daily: 'daily', activity: 'activities' };
 
 /** 体重の節目とバッジで、新しく届いたもの（純粋関数）。celebrated が null なら、保存前の記録で届いていた分はお祝い済みとみなす */
 export function newAchievements(data, kind, recId) {

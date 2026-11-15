@@ -1,5 +1,5 @@
 // ホーム画面（ダッシュボード）
-import { bmi, bmiCategory, fmtNum, latestWeight, startWeight } from '../calc.js';
+import { addDays, bmi, bmiCategory, exerciseDays, fmtNum, latestWeight, startWeight, todayStr, weekStart } from '../calc.js';
 import { fmtDateShort, h } from '../ui.js';
 import { goalCards, signed } from './home-goal.js';
 import { reviewCard } from './home-review.js';
@@ -65,7 +65,9 @@ export function render(root, app) {
 
   const b = bmi(latest.weightKg, heightCm);
   const diff = start && start.id !== latest.id ? latest.weightKg - start.weightKg : null;
-  root.append(h('section', { class: 'hero-card bib', 'aria-label': '今の体重' },
+  if (app.data.settings.hideWeight && heroState.nav !== app.navCount) {
+    root.append(hiddenHero(app));
+  } else root.append(h('section', { class: 'hero-card bib', 'aria-label': '今の体重' },
     bibBand(`${fmtDateShort(latest.date)} の記録`),
     h('div', { class: 'hero' },
       h('span', { class: 'hero-value', text: fmtNum(latest.weightKg) }),
@@ -88,6 +90,30 @@ export function render(root, app) {
   if (review) root.append(review);
   root.append(tasksCard());
   root.append(...goalCards(app, latest));
+}
+
+/* ---------- 体重を隠すとき（v2.11.0）：大きな欄には今週の運動日数を出す ---------- */
+const heroState = { nav: null }; // 「表示」を押した画面の間だけ体重を出す（別の画面に移ると隠れる）
+
+function hiddenHero(app) {
+  const today = todayStr();
+  const monday = weekStart(today);
+  const days = [...exerciseDays(app.data)].filter((d) => d >= monday && d <= addDays(monday, 6)).length;
+  const goal = app.data.settings.weeklyGoalDays;
+  return h('section', { class: 'hero-card bib', 'aria-label': '今週の運動' },
+    bibBand('今週の運動'),
+    h('div', { class: 'hero' },
+      h('span', { class: 'hero-value', text: String(days) }),
+      h('span', { class: 'hero-unit', text: `/ ${goal} 日` }),
+    ),
+    h('div', { class: 'hero-stats' },
+      heroStat('週の目標', days >= goal ? '達成！' : `あと ${goal - days} 日`, ''),
+      h('button', {
+        type: 'button', class: 'hero-stat hero-reveal', 'aria-label': '体重を表示する（もう一度ホームを開くと隠れます）',
+        onclick: () => { heroState.nav = app.navCount; app.render(); },
+      }, h('span', { class: 'hero-stat-label', text: '体重' }), h('span', { class: 'hero-stat-value', text: '表示' }), h('span', { class: 'hero-stat-sub', text: 'タップで表示' })),
+    ),
+  );
 }
 
 /** ゼッケンの上の帯（STRIDE の文字と、安全ピンの穴 4 つ） */
@@ -122,11 +148,14 @@ function linksCard(app) {
 }
 
 function quickAdd(app) {
-  return h('section', { class: 'quick-add', 'aria-label': '記録を入力' },
+  const rt = app.data.settings.recordTypes || {};
+  const buttons = [
     quickButton('体重', 'weight', app),
-    quickButton('筋トレ', 'strength', app),
-    quickButton('ジョギング', 'jog', app),
-  );
+    rt.strength !== false ? quickButton('筋トレ', 'strength', app) : null,
+    rt.jog !== false ? quickButton('ジョギング', 'jog', app) : null,
+    rt.activity ? quickButton('ダンス等', 'activity', app) : null,
+  ].filter(Boolean);
+  return h('section', { class: 'quick-add', 'aria-label': '記録を入力', style: `grid-template-columns: repeat(${buttons.length}, 1fr)` }, buttons);
 }
 
 function quickButton(label, type, app) {

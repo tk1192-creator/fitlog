@@ -81,7 +81,7 @@ function goalCard(app, latest) {
     const track = h('div', { class: 'track-box' }, trackGraphic(progress, {
       title: `目標 ${fmtNum(target)}kg`,
       value: reached ? '達成！' : `あと ${fmtNum(Math.abs(remain))}kg`,
-      sub: `${progress}%（開始 ${fmtNum(start.weightKg)}kg から）`,
+      sub: app.data.settings.hideWeight ? `${progress}% 達成` : `${progress}%（開始 ${fmtNum(start.weightKg)}kg から）`,
     }));
     card.insertBefore(track, card.children[1]);
   }
@@ -90,7 +90,7 @@ function goalCard(app, latest) {
   if (ms && ms.next != null) {
     card.append(h('p', { class: 'milestone-note' },
       '🎯 次の節目 ', h('strong', { text: `${fmtNum(ms.next)}kg` }), ' まで あと ', h('strong', { text: `${fmtNum(ms.remain, 1)}kg` }),
-      h('span', { class: 'milestone-sub', text: `（7 日平均 ${fmtNum(ms.current, 1)}kg・節目 ${ms.reached.length}/${ms.steps.length} 達成）` }),
+      h('span', { class: 'milestone-sub', text: app.data.settings.hideWeight ? `（節目 ${ms.reached.length}/${ms.steps.length} 達成）` : `（7 日平均 ${fmtNum(ms.current, 1)}kg・節目 ${ms.reached.length}/${ms.steps.length} 達成）` }),
     ));
   }
   return card;
@@ -203,6 +203,7 @@ function weekCard(app) {
   const week = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
   const strengthDays = new Set(app.data.strength.map((r) => r.date));
   const jogDays = new Set(app.data.jogs.map((r) => r.date));
+  const actDays = new Set((app.data.activities || []).map((r) => r.date));
   const count = week.filter((d) => days.has(d)).length;
   const streak = streakWeeks(days, goal, today);
   const achieved = count >= goal;
@@ -217,14 +218,16 @@ function weekCard(app) {
       week.map((d, i) => {
         const s = strengthDays.has(d);
         const j = jogDays.has(d);
+        const a = actDays.has(d);
         const label = ['月', '火', '水', '木', '金', '土', '日'][i];
-        const what = [s ? '筋トレ' : null, j ? 'ジョギング' : null].filter(Boolean).join('・') || (d > today ? '' : 'なし');
+        const what = [s ? '筋トレ' : null, j ? 'ジョギング' : null, a ? 'ダンス・その他' : null].filter(Boolean).join('・') || (d > today ? '' : 'なし');
         return h('li', { class: `week-day${d === today ? ' today' : ''}`, 'aria-label': `${label}曜日 ${what}` },
           h('span', { class: 'wd', text: label }),
           h('span', { class: 'marks' },
             s ? h('i', { class: 'mark mark-strength' }) : null,
             j ? h('i', { class: 'mark mark-jog' }) : null,
-            !s && !j ? h('i', { class: 'mark mark-none' }) : null,
+            a ? h('i', { class: 'mark mark-activity' }) : null,
+            !s && !j && !a ? h('i', { class: 'mark mark-none' }) : null,
           ),
         );
       }),

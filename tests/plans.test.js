@@ -85,3 +85,30 @@ test('よく使うリンク: https だけ・名前がなければドメイン・
   eq(r.length, 6);
   eq(normalize({ ...defaultData() }).settings.links, []);
 });
+
+/* ---------- ダンス・その他・表示の設定（v2.11.0） ---------- */
+test('ダンス・その他: 読み込みで検証し、運動した日に数える', async () => {
+  const { exerciseDays } = await import('../js/calc.js');
+  const d = normalize({ ...defaultData(), activities: [
+    { id: 'a', date: '2026-11-10', name: ' ダンス ', minutes: 60, memo: '' },
+    { id: 'b', date: '2026-11-11', name: '', minutes: 30 },
+    { id: 'c', date: 'bad', name: 'ヨガ' },
+    { id: 'd', date: '2026-11-12', name: 'ヨガ', minutes: 9999 },
+  ] });
+  eq(d.activities.map((r) => [r.id, r.name, r.minutes]), [['a', 'ダンス', 60], ['d', 'ヨガ', null]]);
+  eq([...exerciseDays(d)].sort(), ['2026-11-10', '2026-11-12']);
+});
+test('ダンス・その他: 予定の「できた」と休みのお知らせ（ダンスだけで数える）', () => {
+  const d = data({ activities: [{ id: 'a', date: '2026-11-07', name: 'ダンス', minutes: 60, memo: '' }] }, { restAlert: { enabled: true, days: 3, scope: 'activity' } });
+  eq(planDone(P('p', '2026-11-07', 'activity'), d), true);
+  eq(planDone(P('q', '2026-11-07', 'other'), d), true);
+  eq(planDone(P('r', '2026-11-07', 'strength'), d), false);
+  eq(restMessage(restAlertDue(d, '2026-11-10')), 'ダンス・その他の運動を 3 日休んでいます。明日は体を動かしましょう！');
+  eq(notifyStatusOf(d, '2026-11-10').lastActivityDate, '2026-11-07');
+});
+test('表示の設定: 既定は筋トレ・ジョギングあり、ダンス・その他なし、体重は表示', () => {
+  const s = normalize({ settings: {}, weights: [], strength: [], jogs: [] }).settings;
+  eq([s.recordTypes, s.hideWeight, s.activityNames.includes('ダンス')], [{ strength: true, jog: true, activity: false }, false, true]);
+  const t = normalize({ ...defaultData(), settings: { recordTypes: { strength: false, activity: true }, hideWeight: true } }).settings;
+  eq([t.recordTypes, t.hideWeight], [{ strength: false, jog: true, activity: true }, true]);
+});

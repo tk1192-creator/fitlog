@@ -248,7 +248,7 @@ testSeq('通知: 通知を使っている保存先には「最後の記録日・
   await cloud.syncNow();
   const status = JSON.parse(gh.files.get('notify/status.json').text);
   eq(status.lastWeightDate, '2026-11-04');
-  eq(Object.keys(status).sort(), ['lastExerciseDate', 'lastJogDate', 'lastStrengthDate', 'lastWeightDate', 'plans', 'restAlert', 'updatedAt']);
+  eq(Object.keys(status).sort(), ['lastActivityDate', 'lastExerciseDate', 'lastJogDate', 'lastStrengthDate', 'lastWeightDate', 'plans', 'restAlert', 'updatedAt']);
   const text = gh.files.get('notify/status.json').text;
   eq(['weightKg', 'bodyFat', 'intakeKcal', 'distanceKm', 'memo'].some((k) => text.includes(k)), false, '記録の値やメモは含まない');
 });

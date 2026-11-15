@@ -22,7 +22,57 @@ export function unmount() {
 export function render(root, app, params = {}) {
   const links = linksCard(app);
   if (params.focus === 'links') requestAnimationFrame(() => links.scrollIntoView({ block: 'start' }));
-  root.append(cloudCard(app), familySettingsCard(app), links, habitCard(app), shareCard(app), profileCard(app), exerciseCard(app), lockCard(app), dataCard(app), taskDataCard(app), dangerCard(app), aboutCard());
+  root.append(cloudCard(app), familySettingsCard(app), recordTypeCard(app), links, habitCard(app), shareCard(app), profileCard(app), exerciseCard(app), lockCard(app), dataCard(app), taskDataCard(app), dangerCard(app), aboutCard());
+}
+
+/* ---------- 使う記録の種類・ホームの体重（v2.11.0） ---------- */
+
+function recordTypeCard(app) {
+  const s = app.data.settings;
+  const rt = s.recordTypes || { strength: true, jog: true, activity: false };
+  const cb = (on) => h('input', { type: 'checkbox', checked: Boolean(on) });
+  const strength = cb(rt.strength !== false);
+  const jog = cb(rt.jog !== false);
+  const activity = cb(rt.activity);
+  const hide = cb(s.hideWeight);
+  const save = h('button', { type: 'button', class: 'btn btn-primary btn-block', text: '表示の設定を保存' });
+  save.addEventListener('click', () => {
+    if (!strength.checked && !jog.checked && !activity.checked) return toast('運動の記録を 1 つ以上選んでください');
+    app.update((d) => {
+      d.settings.recordTypes = { strength: strength.checked, jog: jog.checked, activity: activity.checked };
+      d.settings.hideWeight = hide.checked;
+    });
+    toast('保存しました。ホームと記録の画面に反映しました');
+  });
+
+  const names = s.activityNames || [];
+  const newName = h('input', { type: 'text', maxlength: '20', placeholder: '例：フラダンス、ピラティス' });
+  const add = h('form', { class: 'inline-form' }, newName, h('button', { type: 'submit', class: 'btn', text: '追加' }));
+  add.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = newName.value.trim().slice(0, 20);
+    if (!v) return toast('種目の名前を入れてください');
+    if (names.includes(v)) return toast('同じ名前の種目があります');
+    app.update((d) => { d.settings.activityNames = [...(d.settings.activityNames || []), v]; });
+    toast(`「${v}」を追加しました`);
+  });
+
+  return h('section', { class: 'card', id: 'record-types' },
+    h('h2', { class: 'card-title', text: '使う記録の種類・ホームの表示' }),
+    h('p', { class: 'card-note', text: '使う運動の記録を選ぶと、ホームの記録ボタンと記録の画面に、その種類だけが出ます（これまでの記録は消えません）。この設定は人ごとです。' }),
+    h('label', { class: 'check-row' }, strength, h('span', { text: '筋トレ（重量・回数・セット）' })),
+    h('label', { class: 'check-row' }, jog, h('span', { text: 'ジョギング（距離・時間）' })),
+    h('label', { class: 'check-row' }, activity, h('span', { text: 'ダンス・その他（種目・時間。ダンス、ヨガ、水泳など）' })),
+    h('label', { class: 'check-row' }, hide, h('span', { text: 'ホームで体重を大きく表示しない（代わりに今週の運動日数を出す。体重は「表示」を押したときだけ）' })),
+    save,
+    h('h3', { class: 'notify-title', text: 'ダンス・その他の種目の候補' }),
+    h('p', { class: 'card-note', text: '記録するときの候補です。候補にない種目も、記録の画面で自由に入力できます。' }),
+    h('div', { class: 'habit-chips' }, names.map((n) => h('button', {
+      type: 'button', class: 'habit-chip', text: `${n} ×`, 'aria-label': `候補「${n}」を外す`,
+      onclick: () => { app.update((d) => { d.settings.activityNames = d.settings.activityNames.filter((x) => x !== n); }); toast(`「${n}」を候補から外しました`); },
+    }))),
+    add,
+  );
 }
 
 /* ---------- 家族の部屋（v2.10.0。js/family.js） ---------- */

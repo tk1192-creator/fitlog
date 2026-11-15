@@ -20,7 +20,10 @@ export function unmount() {
 
 export function render(root, app, params) {
   if (params.kind) state.kind = params.kind;
-  root.append(segmented(KINDS, state.kind, (k) => { state.kind = k; app.render(); }, 'グラフの種類'));
+  const rt = app.data.settings.recordTypes || {};
+  const kinds = KINDS.filter(([k]) => !(k in rt) || rt[k] !== false);
+  if (!kinds.some(([k]) => k === state.kind)) state.kind = 'weight';
+  root.append(segmented(kinds, state.kind, (k) => { state.kind = k; app.render(); }, 'グラフの種類'));
 
   if (state.kind === 'bests') {
     renderBestList(root, app);

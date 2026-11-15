@@ -37,6 +37,8 @@ export function render(root, app, params = {}) {
   const counts = weeklyCounts(days);
   const strengthDays = new Set(app.data.strength.map((r) => r.date));
   const jogDays = new Set(app.data.jogs.map((r) => r.date));
+  const actDays = new Set((app.data.activities || []).map((r) => r.date));
+  const showAct = Boolean(app.data.settings.recordTypes && app.data.settings.recordTypes.activity) || actDays.size > 0;
   const streak = streakWeeks(days, goal, today);
   // タスクの期限（Task Board のデータを読むだけ。この端末の中だけで表示する）
   const taskMap = tasksByDue(loadTasks() || []);
@@ -105,6 +107,7 @@ export function render(root, app, params = {}) {
       const d = addDays(wk, i);
       const s = strengthDays.has(d);
       const j = jogDays.has(d);
+      const a = actDays.has(d);
       const cls = ['cal-day'];
       if (!d.startsWith(state.month)) cls.push('other');
       if (d === today) cls.push('today');
@@ -116,7 +119,7 @@ export function render(root, app, params = {}) {
       const pl = plansOn(app.data, d);
       const plOpen = pl.filter((p) => !planDone(p, app.data)); // まだ記録していない予定
       const late = tk.length > 0 && d < today; // 期限切れ
-      const what = ([s ? '筋トレ' : null, j ? 'ジョギング' : null].filter(Boolean).join('と') || '運動なし')
+      const what = ([s ? '筋トレ' : null, j ? 'ジョギング' : null, a ? 'ダンス・その他' : null].filter(Boolean).join('と') || '運動なし')
         + (pl.length ? `、運動の予定 ${pl.length} 件` : '')
         + (tk.length ? `、タスクの期限 ${tk.length} 件${late ? '（期限切れ）' : ''}` : '');
       row.append(h('button', {
@@ -128,6 +131,7 @@ export function render(root, app, params = {}) {
       h('span', { class: 'marks' },
         s ? h('i', { class: 'mark mark-strength' }) : null,
         j ? h('i', { class: 'mark mark-jog' }) : null,
+        a ? h('i', { class: 'mark mark-activity' }) : null,
         plOpen.length ? h('i', { class: `mark mark-plan${d < today ? ' missed' : ''}` }) : null,
         tk.length ? h('i', { class: `mark mark-task${late ? ' late' : ''}` }) : null,
       )));
@@ -144,6 +148,7 @@ export function render(root, app, params = {}) {
   card.append(h('p', { class: 'cal-legend' },
     h('span', {}, h('i', { class: 'mark mark-strength' }), ' 筋トレ'),
     h('span', {}, h('i', { class: 'mark mark-jog' }), ' ジョギング'),
+    showAct ? h('span', {}, h('i', { class: 'mark mark-activity' }), ' ダンス・その他') : null,
     h('span', {}, h('i', { class: 'mark mark-plan' }), ' 運動の予定'),
     taskMap.size ? h('span', {}, h('i', { class: 'mark mark-task' }), ' タスクの期限') : null,
     h('span', {}, h('span', { class: 'wk-badge small', text: 'n' }), ` 週の目標（${goal} 日）達成`),
@@ -183,12 +188,15 @@ function dayDetail(app, date, today, tasks) {
   const weights = app.data.weights.filter((x) => x.date === date);
   const strength = app.data.strength.filter((x) => x.date === date);
   const jogs = app.data.jogs.filter((x) => x.date === date);
+  const acts = (app.data.activities || []).filter((x) => x.date === date);
+  const showAct = Boolean(app.data.settings.recordTypes && app.data.settings.recordTypes.activity) || (app.data.activities || []).length > 0;
   const daily = app.data.daily.filter((x) => x.date === date);
   const edit = (type, id) => app.navigate('records', { type, editId: id });
 
   const items = [
     ...weights.map((w) => item('weight', '体重', `${fmtNum(w.weightKg)}kg${w.bodyFatPct != null ? `　体脂肪 ${fmtNum(w.bodyFatPct)}%` : ''}`, w.memo, () => edit('weight', w.id))),
     ...strength.map((r) => item('strength', r.exercise, `${fmtNum(r.weightKg)}kg × ${r.reps}回 × ${r.sets}セット　1RM ${fmtNum(epley1RM(r.weightKg, r.reps))}kg`, r.memo, () => edit('strength', r.id))),
+    ...acts.map((r) => item('activity', r.name, r.minutes ? `${r.minutes} 分` : 'ダンス・その他', r.memo, () => edit('activity', r.id))),
     ...daily.map((d) => item('daily', '食事・歩数', [d.intakeKcal != null ? `${fmtInt(d.intakeKcal)}kcal` : null, d.steps != null ? `${fmtInt(d.steps)}歩` : null].filter(Boolean).join('　'), d.memo, () => edit('daily', d.id))),
     ...jogs.map((j) => item('jog', 'ジョギング', `${fmtNum(j.distanceKm, 2)}km　${formatDuration(j.durationSec)}　${formatPace(paceSecPerKm(j.durationSec, j.distanceKm))}/km`, j.memo, () => edit('jog', j.id))),
   ];
@@ -221,7 +229,9 @@ function dayDetail(app, date, today, tasks) {
   if (date <= today) {
     card.append(h('div', { class: 'day-add' },
       h('span', { class: 'card-note', text: 'この日の記録を追加:' }),
-      ...[['weight', '体重'], ['strength', '筋トレ'], ['jog', 'ジョギング'], ['daily', '食事・歩数']].map(([type, label]) =>
+      ...[['weight', '体重'], ['strength', '筋トレ'], ['jog', 'ジョギング'], ['activity', 'ダンス等'], ['daily', '食事・歩数']]
+        .filter(([type]) => type === 'weight' || type === 'daily' || (type === 'activity' ? showAct : (app.data.settings.recordTypes || {})[type] !== false))
+        .map(([type, label]) =>
         h('button', { type: 'button', class: 'btn btn-sm', text: `＋${label}`, onclick: () => app.navigate('records', { type, date }) })),
     ));
   }

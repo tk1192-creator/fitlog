@@ -25,7 +25,7 @@ const WEEKLY_PATH = 'notify/weekly.json'; // LINE で家族に送る「今週の
 const OUTBOX_DIR = 'outbox'; // LINE で家族に送る自己ベストの報告（置かれると Actions がすぐ送って消す）
 const PBKDF2_ITERATIONS = 310000;
 const PUSH_DELAY_MS = 3000;
-const LISTS = ['weights', 'strength', 'jogs', 'daily', 'plans', 'habits', 'habitLogs'];
+const LISTS = ['weights', 'strength', 'jogs', 'daily', 'plans', 'habits', 'habitLogs', 'activities'];
 
 /**
  * 統合する一覧の名前。既知の一覧に加えて、新しい版で増えた一覧（ID 付きの記録の配列）も同じ方法で統合する。

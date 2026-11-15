@@ -27,6 +27,7 @@
   --gold: #f2b01e;
   --series-1: #2563eb; /* ジョギング・主系列 */
   --series-2: #f0642a; /* 筋トレ・副系列 */
+  --series-3: #8b5cf6; /* ダンス・その他（v2.11.0） */
   --glow: #5cc8ff;
   --hero-grad: linear-gradient(140deg, #050d24 0%, #0b2a66 48%, #1f5fe0 100%);
   --btn-grad: linear-gradient(135deg, #2f7bff 0%, #1d4ed8 100%);
@@ -832,3 +833,10 @@ textarea { width: 100%; min-height: 52px; padding: 10px 14px; border: 1px solid 
 /* 設定：トークンを入れ直す（v2.10.1） */
 .token-replace { margin: 12px 0 4px; }
 .token-replace summary { cursor: pointer; color: var(--accent); font-weight: 700; font-size: 14px; }
+
+/* ダンス・その他・体重を隠したホーム（v2.11.0） */
+.mark-activity { background: var(--series-3, #8b5cf6); }
+.day-activity { border-left-color: var(--series-3, #8b5cf6); }
+.quick-activity .quick-plus { background: linear-gradient(135deg, #a78bfa, #7c3aed) !important; color: #fff !important; }
+.hero-reveal { cursor: pointer; text-align: left; color: inherit; font: inherit; }
+.quick-add .quick-label { white-space: nowrap; }

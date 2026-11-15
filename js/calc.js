@@ -198,6 +198,7 @@ export function exerciseDays(data) {
   const set = new Set();
   for (const r of data.strength) set.add(r.date);
   for (const r of data.jogs) set.add(r.date);
+  for (const r of data.activities || []) set.add(r.date); // ダンス・その他（v2.11.0）
   return set;
 }
 

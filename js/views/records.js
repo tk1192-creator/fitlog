@@ -4,8 +4,14 @@ import { newId } from '../storage.js';
 import { confirmDialog, field, fmtDateShort, h, segmented, toast } from '../ui.js';
 import { afterSave } from '../hooks.js';
 
-const TYPES = [['weight', '体重'], ['strength', '筋トレ'], ['jog', 'ジョギング'], ['daily', '食事・歩数']];
-const LIST_KEY = { weight: 'weights', strength: 'strength', jog: 'jogs', daily: 'daily' };
+const ALL_TYPES = [['weight', '体重'], ['strength', '筋トレ'], ['jog', 'ジョギング'], ['activity', 'ダンス・その他'], ['daily', '食事・歩数']];
+const LIST_KEY = { weight: 'weights', strength: 'strength', jog: 'jogs', activity: 'activities', daily: 'daily' };
+
+/** 設定の「使う記録の種類」で選んだものだけ（体重と食事・歩数はいつも出す。編集中・指定された種類は出す） */
+function typesFor(app, keep) {
+  const rt = app.data.settings.recordTypes || {};
+  return ALL_TYPES.filter(([k]) => k === 'weight' || k === 'daily' || k === keep || rt[k] !== false && (k !== 'activity' || rt.activity));
+}
 const PAGE = 30;
 
 // 画面をまたいで保持する状態
@@ -24,8 +30,10 @@ export function render(root, app, params) {
     state.editingId = params.editId;
   }
 
+  const types = typesFor(app, state.type);
+  if (!types.some(([k]) => k === state.type)) state.type = 'weight';
   root.append(
-    segmented(TYPES, state.type, (t) => {
+    segmented(types, state.type, (t) => {
       state.type = t;
       state.editingId = null;
       state.shown = PAGE;
@@ -40,7 +48,8 @@ export function render(root, app, params) {
   const form = state.type === 'weight' ? weightForm(app, editing)
     : state.type === 'strength' ? strengthForm(app, editing)
       : state.type === 'jog' ? jogForm(app, editing)
-        : dailyForm(app, editing);
+        : state.type === 'activity' ? activityForm(app, editing)
+          : dailyForm(app, editing);
   root.append(h('section', { class: 'card' + (editing ? ' editing' : '') },
     h('h2', { class: 'card-title', text: editing ? `記録を編集（${fmtDateShort(editing.date)}）` : '新しい記録' }),
     form,
@@ -91,7 +100,41 @@ async function removeRecord(app, kind, rec) {
 }
 
 function labelOf(kind) {
-  return TYPES.find(([k]) => k === kind)[1];
+  return ALL_TYPES.find(([k]) => k === kind)[1];
+}
+
+/* ---------- ダンス・その他（v2.11.0） ---------- */
+
+function activityForm(app, editing) {
+  const names = app.data.settings.activityNames || [];
+  const listId = 'activity-names';
+  const name = h('input', {
+    type: 'text', name: 'name', required: true, maxlength: '20', list: listId,
+    value: editing?.name || state.lastActivity || names[0] || '', placeholder: '例: ダンス',
+  });
+  const minutes = numberInput('minutes', editing?.minutes, { step: '5', min: '1', placeholder: '例: 60（任意）', inputmode: 'numeric' });
+  const form = h('form', { class: 'form', novalidate: true },
+    field('日付', dateInput(editing?.date)),
+    field('種目', name, '候補から選ぶか、自由に入力（候補は設定で変えられます）'),
+    h('datalist', { id: listId }, names.map((n) => h('option', { value: n }))),
+    field('時間（分）', minutes),
+    field('メモ', memoInput(editing?.memo)),
+    formActions(app, editing, 'activity'),
+  );
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const f = new FormData(form);
+    const date = f.get('date');
+    const n = String(f.get('name') || '').trim().slice(0, 20);
+    const m = f.get('minutes') === '' ? null : Number(f.get('minutes'));
+    if (!date) return toast('日付を入力してください');
+    if (date > todayStr()) return toast('未来の日付は入力できません');
+    if (!n) return toast('種目を入力してください（例: ダンス）');
+    if (m != null && !(m > 0 && m <= 600)) return toast('時間は 1〜600 分で入力してください');
+    state.lastActivity = n;
+    commit(app, 'activity', { id: editing?.id || newId(), date, name: n, minutes: m == null ? null : Math.round(m), memo: String(f.get('memo') || '').trim() }, editing);
+  });
+  return form;
 }
 
 /** 保存の共通処理: 追加 or 更新して、後処理（自己ベスト判定など）を呼ぶ */
@@ -377,6 +420,13 @@ function describe(app, rec) {
     return [
       h('strong', { text: rec.exercise }),
       h('span', { class: 'record-sub', text: `${fmtNum(rec.weightKg)}kg × ${rec.reps}回 × ${rec.sets}セット　1RM ${fmtNum(epley1RM(rec.weightKg, rec.reps))}kg` }),
+      memo,
+    ];
+  }
+  if (state.type === 'activity') {
+    return [
+      h('strong', { text: rec.name }),
+      h('span', { class: 'record-sub', text: rec.minutes ? `${rec.minutes} 分` : '' }),
       memo,
     ];
   }

@@ -63,12 +63,13 @@ const sent = await readJSON('notify/sent.json');
 const sentData = sent.data || {};
 
 const daysBetween = (a, b) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86400000);
-const KIND = { strength: '筋トレ', jog: 'ジョギング', other: '運動' };
+const KIND = { strength: '筋トレ', jog: 'ジョギング', activity: 'ダンス・その他', other: '運動' };
 const todaysPlans = (Array.isArray(status.plans) ? status.plans : []).filter((p) => p && p.date === today);
 const planLabel = (p) => `${p.time ? `${p.time} ` : ''}${p.title || KIND[p.kind] || '運動'}`;
 function planDone(p) {
   if (p.kind === 'strength') return status.lastStrengthDate === today;
   if (p.kind === 'jog') return status.lastJogDate === today;
+  if (p.kind === 'activity') return status.lastActivityDate === today;
   return status.lastExerciseDate === today;
 }
 
@@ -82,10 +83,12 @@ if (mode === 'morning') {
   const notYet = todaysPlans.filter((p) => !planDone(p));
   if (notYet.length) lines.push(`予定の「${notYet.map(planLabel).join('」「')}」はできましたか？ できたら記録しましょう。`);
   const ra = status.restAlert || { enabled: false };
-  const last = ra.scope === 'all' ? status.lastExerciseDate : status.lastStrengthDate;
+  const last = ra.scope === 'all' ? status.lastExerciseDate : ra.scope === 'activity' ? status.lastActivityDate : status.lastStrengthDate;
   if (ra.enabled && last && daysBetween(last, today) >= (ra.days || 3)) {
     const n = daysBetween(last, today);
-    lines.push(ra.scope === 'all' ? `運動を ${n} 日続けて休んでいます。明日は体を動かしましょう！` : `ジム（筋トレ）に ${n} 日行っていません。明日は行きましょう！`);
+    lines.push(ra.scope === 'all' ? `運動を ${n} 日続けて休んでいます。明日は体を動かしましょう！`
+      : ra.scope === 'activity' ? `ダンス・その他の運動を ${n} 日休んでいます。明日は体を動かしましょう！`
+        : `ジム（筋トレ）に ${n} 日行っていません。明日は行きましょう！`);
   }
 }
 

@@ -2,9 +2,9 @@
 // 予定と習慣は記録と同じく ID 付きの一覧（plans / habits / habitLogs）にして、暗号化した記録の一部として同期する。
 import { addDays, daysBetween, todayStr } from './calc.js';
 
-export const PLAN_KINDS = [['strength', '筋トレ'], ['jog', 'ジョギング'], ['other', 'その他の運動']];
+export const PLAN_KINDS = [['strength', '筋トレ'], ['jog', 'ジョギング'], ['activity', 'ダンス・その他'], ['other', 'どの運動でも']];
 export const PLAN_KIND_LABEL = Object.fromEntries(PLAN_KINDS);
-export const REST_SCOPES = [['strength', '筋トレだけ'], ['all', '運動すべて']];
+export const REST_SCOPES = [['strength', '筋トレだけ'], ['activity', 'ダンス・その他だけ'], ['all', '運動すべて']];
 export const DEFAULT_REST_ALERT = { enabled: true, days: 3, scope: 'strength' };
 const NOTIFY_PLAN_DAYS = 30; // 通知用に置く予定は今日から 30 日先まで
 
@@ -21,7 +21,8 @@ export function planDone(p, data) {
   const has = (list) => (list || []).some((r) => r.date === p.date);
   if (p.kind === 'strength') return has(data.strength);
   if (p.kind === 'jog') return has(data.jogs);
-  return has(data.strength) || has(data.jogs);
+  if (p.kind === 'activity') return has(data.activities);
+  return has(data.strength) || has(data.jogs) || has(data.activities);
 }
 
 /** その日の予定（時刻順。時刻なしは後ろ） */
@@ -41,7 +42,8 @@ export function restAlertSettings(data) {
  */
 export function restDays(data, today = todayStr()) {
   const s = restAlertSettings(data);
-  const last = s.scope === 'all' ? maxDate(lastDate(data.strength), lastDate(data.jogs)) : lastDate(data.strength);
+  const last = s.scope === 'all' ? maxDate(maxDate(lastDate(data.strength), lastDate(data.jogs)), lastDate(data.activities))
+    : s.scope === 'activity' ? lastDate(data.activities) : lastDate(data.strength);
   if (!last) return null;
   return { days: Math.max(0, daysBetween(last, today)), last, scope: s.scope };
 }
@@ -55,9 +57,9 @@ export function restAlertDue(data, today = todayStr()) {
 
 /** 休みのお知らせの文（アプリ・通知で共通） */
 export function restMessage(r) {
-  return r.scope === 'all'
-    ? `運動を ${r.days} 日続けて休んでいます。明日は体を動かしましょう！`
-    : `ジム（筋トレ）に ${r.days} 日行っていません。明日は行きましょう！`;
+  if (r.scope === 'all') return `運動を ${r.days} 日続けて休んでいます。明日は体を動かしましょう！`;
+  if (r.scope === 'activity') return `ダンス・その他の運動を ${r.days} 日休んでいます。明日は体を動かしましょう！`;
+  return `ジム（筋トレ）に ${r.days} 日行っていません。明日は行きましょう！`;
 }
 
 /**
@@ -67,12 +69,14 @@ export function restMessage(r) {
 export function notifyStatusOf(data, today = todayStr()) {
   const lastStrengthDate = lastDate(data.strength);
   const lastJogDate = lastDate(data.jogs);
+  const lastActivityDate = lastDate(data.activities);
   const until = addDays(today, NOTIFY_PLAN_DAYS);
   return {
     lastWeightDate: lastDate(data.weights),
     lastStrengthDate,
     lastJogDate,
-    lastExerciseDate: maxDate(lastStrengthDate, lastJogDate),
+    lastActivityDate,
+    lastExerciseDate: maxDate(maxDate(lastStrengthDate, lastJogDate), lastActivityDate),
     plans: (data.plans || []).filter((p) => p.date >= today && p.date <= until)
       .sort((a, b) => (a.date + (a.time || '99:99')).localeCompare(b.date + (b.time || '99:99')))
       .map((p) => ({ date: p.date, time: p.time || '', kind: p.kind, title: planTitle(p) })),
