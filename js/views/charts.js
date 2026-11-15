@@ -241,7 +241,7 @@ function renderStrength(root, app) {
 
   const stats = filterByPeriod(dailyStrengthStats(app.data.strength, state.exercise), state.period, todayStr());
   if (!stats.length) {
-    root.append(emptyCard(`${state.exercise} の推移`, 'この期間の記録がありません。'));
+    root.append(emptyCard(`${state.exercise} の推移`, 'この期間に重量を入れた記録がありません（自重の記録は記録の画面・カレンダーで見られます）。'));
     return;
   }
   const t = theme();

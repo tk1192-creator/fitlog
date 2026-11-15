@@ -22,8 +22,12 @@ export function meetsGoal(weightKg, targetKg, direction) {
 export function computeBests(data) {
   const strength = {};
   for (const r of sortByDate(data.strength)) {
-    const b = strength[r.exercise] || (strength[r.exercise] = { maxWeight: null, max1RM: null, count: 0 });
+    const b = strength[r.exercise] || (strength[r.exercise] = { maxWeight: null, max1RM: null, maxReps: null, count: 0 });
     b.count++;
+    if (r.weightKg == null) {
+      if (!b.maxReps || r.reps > b.maxReps.value) b.maxReps = { value: r.reps, date: r.date, sets: r.sets };
+      continue;
+    }
     if (!b.maxWeight || r.weightKg > b.maxWeight.value) b.maxWeight = { value: r.weightKg, date: r.date, reps: r.reps };
     const orm = epley1RM(r.weightKg, r.reps);
     if (!b.max1RM || orm > b.max1RM.value) b.max1RM = { value: orm, date: r.date, weightKg: r.weightKg, reps: r.reps };
@@ -66,8 +70,16 @@ export function evaluateSave(kind, rec, data) {
   return [];
 }
 
-function evalStrength(rec, others) {
+function evalStrength(rec, all) {
   const ex = rec.exercise;
+  // 自重（重量なし）の記録は、自重の記録どうしで回数を比べる
+  if (rec.weightKg == null) {
+    const prev = all.filter((x) => x.weightKg == null);
+    if (!prev.length) return [{ type: 'first', text: `${ex}（自重）初記録！ ${rec.reps}回` }];
+    const prevMax = Math.max(...prev.map((x) => x.reps));
+    return rec.reps > prevMax ? [{ type: 'pb', text: `${ex}（自重）最多回数 更新！ ${prevMax}回 → ${rec.reps}回` }] : [];
+  }
+  const others = all.filter((x) => x.weightKg != null);
   const orm = epley1RM(rec.weightKg, rec.reps);
   if (!others.length) {
     return [{ type: 'first', text: `${ex} 初記録！ ${fmtNum(rec.weightKg)}kg × ${rec.reps}回` }];

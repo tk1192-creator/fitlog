@@ -7,6 +7,7 @@ import { field, fmtDateLong, h, toast } from '../ui.js';
 import { newId } from '../storage.js';
 import { PLAN_KINDS, PLAN_KIND_LABEL, habitsDoneOn, planDone, planTitle, plansOn } from '../plans.js';
 import { TASK_STATUS_LABEL, loadTasks, tasksByDue } from './home-tasks.js';
+import { strengthText } from './records.js';
 
 const WD = ['月', '火', '水', '木', '金', '土', '日'];
 
@@ -195,7 +196,7 @@ function dayDetail(app, date, today, tasks) {
 
   const items = [
     ...weights.map((w) => item('weight', '体重', `${fmtNum(w.weightKg)}kg${w.bodyFatPct != null ? `　体脂肪 ${fmtNum(w.bodyFatPct)}%` : ''}`, w.memo, () => edit('weight', w.id))),
-    ...strength.map((r) => item('strength', r.exercise, `${fmtNum(r.weightKg)}kg × ${r.reps}回 × ${r.sets}セット　1RM ${fmtNum(epley1RM(r.weightKg, r.reps))}kg`, r.memo, () => edit('strength', r.id))),
+    ...strength.map((r) => item('strength', r.exercise, strengthText(r), r.memo, () => edit('strength', r.id))),
     ...acts.map((r) => item('activity', r.name, r.minutes ? `${r.minutes} 分` : 'ダンス・その他', r.memo, () => edit('activity', r.id))),
     ...daily.map((d) => item('daily', '食事・歩数', [d.intakeKcal != null ? `${fmtInt(d.intakeKcal)}kcal` : null, d.steps != null ? `${fmtInt(d.steps)}歩` : null].filter(Boolean).join('　'), d.memo, () => edit('daily', d.id))),
     ...jogs.map((j) => item('jog', 'ジョギング', `${fmtNum(j.distanceKm, 2)}km　${formatDuration(j.durationSec)}　${formatPace(paceSecPerKm(j.durationSec, j.distanceKm))}/km`, j.memo, () => edit('jog', j.id))),

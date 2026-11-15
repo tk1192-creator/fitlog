@@ -99,6 +99,12 @@ async function removeRecord(app, kind, rec) {
   toast('削除しました');
 }
 
+/** 筋トレの内容の文（重量が空欄なら「自重」で、推定 1RM は出さない） */
+export function strengthText(r) {
+  if (r.weightKg == null) return `自重 × ${r.reps}回 × ${r.sets}セット`;
+  return `${fmtNum(r.weightKg)}kg × ${r.reps}回 × ${r.sets}セット　1RM ${fmtNum(epley1RM(r.weightKg, r.reps))}kg`;
+}
+
 function labelOf(kind) {
   return ALL_TYPES.find(([k]) => k === kind)[1];
 }
@@ -205,13 +211,13 @@ function strengthForm(app, editing) {
   const select = h('select', { name: 'exercise', required: true },
     options.map((ex) => h('option', { value: ex, text: ex, selected: ex === selected })),
   );
-  const weight = numberInput('weightKg', editing?.weightKg, { step: '0.5', placeholder: '例: 60', required: true });
+  const weight = numberInput('weightKg', editing?.weightKg, { step: '0.5', placeholder: '空欄＝自重' });
   const reps = numberInput('reps', editing?.reps, { step: '1', min: '1', placeholder: '例: 10', required: true, inputmode: 'numeric' });
   const sets = numberInput('sets', editing?.sets ?? 3, { step: '1', min: '1', placeholder: '例: 3', required: true, inputmode: 'numeric' });
   const ormOut = h('output', { class: 'live' });
   const updateOrm = () => {
     const v = epley1RM(Number(weight.value), Number(reps.value));
-    ormOut.textContent = v ? `推定 1RM ${fmtNum(v)}kg（Epley 式）` : '推定 1RM は重量と回数から自動計算します';
+    ormOut.textContent = v ? `推定 1RM ${fmtNum(v)}kg（Epley 式）` : '重量は空欄でも保存できます（自重の種目）。入れると推定 1RM を計算します';
   };
   weight.addEventListener('input', updateOrm);
   reps.addEventListener('input', updateOrm);
@@ -237,7 +243,7 @@ function strengthForm(app, editing) {
       id: editing?.id || newId(),
       date: f.get('date'),
       exercise: String(f.get('exercise') || '').trim(),
-      weightKg: Number(f.get('weightKg')),
+      weightKg: f.get('weightKg') === '' ? null : Number(f.get('weightKg')),
       reps: Math.round(Number(f.get('reps'))),
       sets: Math.round(Number(f.get('sets'))),
       memo: String(f.get('memo') || '').trim(),
@@ -245,7 +251,7 @@ function strengthForm(app, editing) {
     if (!rec.date) return toast('日付を入力してください');
     if (rec.date > todayStr()) return toast('未来の日付は入力できません');
     if (!rec.exercise) return toast('種目を選んでください');
-    if (!(rec.weightKg > 0 && rec.weightKg <= 500)) return toast('重量は 0〜500kg の範囲で入力してください');
+    if (rec.weightKg != null && !(rec.weightKg > 0 && rec.weightKg <= 500)) return toast('重量は 0〜500kg の範囲で入力するか、空欄にしてください');
     if (!(rec.reps >= 1 && rec.reps <= 100)) return toast('回数は 1〜100 で入力してください');
     if (!(rec.sets >= 1 && rec.sets <= 50)) return toast('セット数は 1〜50 で入力してください');
     state.lastExercise = rec.exercise;
@@ -419,7 +425,7 @@ function describe(app, rec) {
   if (state.type === 'strength') {
     return [
       h('strong', { text: rec.exercise }),
-      h('span', { class: 'record-sub', text: `${fmtNum(rec.weightKg)}kg × ${rec.reps}回 × ${rec.sets}セット　1RM ${fmtNum(epley1RM(rec.weightKg, rec.reps))}kg` }),
+      h('span', { class: 'record-sub', text: strengthText(rec) }),
       memo,
     ];
   }

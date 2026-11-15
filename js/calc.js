@@ -249,7 +249,7 @@ export function monthlyJogStats(jogs) {
 export function dailyStrengthStats(strength, exercise) {
   const map = new Map();
   for (const r of strength) {
-    if (r.exercise !== exercise) continue;
+    if (r.exercise !== exercise || r.weightKg == null) continue; // 自重（重量なし）はグラフに出さない
     const orm = epley1RM(r.weightKg, r.reps);
     const cur = map.get(r.date) || { date: r.date, maxWeight: 0, max1RM: 0 };
     cur.maxWeight = Math.max(cur.maxWeight, r.weightKg);

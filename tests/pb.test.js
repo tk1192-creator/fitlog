@@ -99,3 +99,16 @@ test('自己ベスト一覧の計算', () => {
   eq(b.jog.fastest.date, '2026-10-05'); // 2km の記録は対象外
   eq(b.weight.lowest.value, 69);
 });
+
+/* ---------- 自重（重量なし）の筋トレ（v2.11.1） ---------- */
+test('自重: 重量が空欄でも保存でき、重量ありの記録とは別に回数で比べる', async () => {
+  const { normalize, defaultData } = await import('../js/storage.js');
+  const { evaluateSave, computeBests } = await import('../js/pb.js');
+  const S = (id, date, kg, reps) => ({ id, date, exercise: '腕立て伏せ', weightKg: kg, reps, sets: 3, memo: '' });
+  const d = normalize({ ...defaultData(), strength: [S('a', '2026-11-01', null, 20), S('b', '2026-11-02', '', 25), S('c', '2026-11-03', 10, 8)] });
+  eq(d.strength.map((r) => r.weightKg), [null, null, 10]);
+  eq(evaluateSave('strength', d.strength[1], d).map((m) => m.text), ['腕立て伏せ（自重）最多回数 更新！ 20回 → 25回']);
+  eq(evaluateSave('strength', d.strength[2], d).map((m) => m.type), ['first'], '重量ありの初記録は自重とは別');
+  const b = computeBests(d).strength['腕立て伏せ'];
+  eq([b.maxWeight.value, b.maxReps.value], [10, 25]);
+});

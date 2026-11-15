@@ -23,8 +23,9 @@ export function renderBestList(root, app) {
     const s = b.strength[ex];
     st.append(h('div', { class: 'best-group' },
       h('h3', { class: 'best-name', text: ex }),
-      row('最大重量', `${fmtNum(s.maxWeight.value)}kg`, `${fmtDateShort(s.maxWeight.date)}（${s.maxWeight.reps}回）`),
-      row('推定1RM', `${fmtNum(s.max1RM.value)}kg`, `${fmtDateShort(s.max1RM.date)}（${fmtNum(s.max1RM.weightKg)}kg×${s.max1RM.reps}回）`),
+      s.maxWeight ? row('最大重量', `${fmtNum(s.maxWeight.value)}kg`, `${fmtDateShort(s.maxWeight.date)}（${s.maxWeight.reps}回）`) : null,
+      s.max1RM ? row('推定1RM', `${fmtNum(s.max1RM.value)}kg`, `${fmtDateShort(s.max1RM.date)}（${fmtNum(s.max1RM.weightKg)}kg×${s.max1RM.reps}回）`) : null,
+      s.maxReps ? row('最多回数（自重）', `${s.maxReps.value}回`, fmtDateShort(s.maxReps.date)) : null,
     ));
   }
 
